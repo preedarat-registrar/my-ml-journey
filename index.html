@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My ML Journey — Linear Regression ม.1</title>
+<style>
+:root{
+  --bg:#f5f7fb;--paper:#fff;--ink:#172033;--muted:#667085;--line:#dfe5ee;
+  --navy:#20365e;--blue:#3678e5;--green:#2aa36b;--orange:#f09c42;--violet:#755fd7;--red:#d95663;
+  --cyan:#24a9b8;--softB:#eef5ff;--softG:#edf9f2;--softO:#fff5e8;--softR:#fff0f2;--softV:#f4f1ff;
+  --shadow:0 8px 24px rgba(30,48,82,.08)
+}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{font-family:"Noto Sans Thai","Leelawadee UI","Tahoma","Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg);overflow:auto}
+button,input,textarea,select{font:inherit}button{cursor:pointer}
+.stage{
+  width:min(100%,177.78vh);min-height:100vh;margin:auto;padding:8px;
+  display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:6px;
+  background:radial-gradient(circle at 0 0,#eaf3ff 0,transparent 22%),
+             radial-gradient(circle at 100% 0,#fff1e4 0,transparent 18%),var(--bg)
+}
+.hero{background:linear-gradient(135deg,#fff,#f8fbff 72%,#fffaf4);border:1px solid var(--line);border-radius:16px;padding:8px 12px;display:grid;grid-template-columns:1fr auto;gap:7px;box-shadow:var(--shadow)}
+.hero h1{margin:0;color:var(--navy);font-size:clamp(20px,1.9vw,30px)}
+.hero p{margin:2px 0 0;color:var(--muted);font-size:10px}
+.badge{padding:5px 8px;border-radius:999px;background:var(--softB);border:1px solid #d7e6ff;color:#2b5fb8;font-weight:900;font-size:9px}
+.key{grid-column:1/-1;border-radius:8px;padding:5px 8px;background:linear-gradient(90deg,var(--softB),var(--softV));border:1px solid #dce5f7;color:#304a79;font-size:9.5px;font-weight:800}
+
+/* STEP TIMELINE */
+.timeline{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;position:relative}
+.step{position:relative;display:grid;grid-template-columns:40px 1fr;gap:6px;align-items:center;background:#fff;border:2px solid var(--line);border-radius:13px;padding:5px 7px;min-height:60px;transition:.2s}
+.step:not(:last-child)::after{content:"→";position:absolute;right:-8px;top:16px;z-index:5;color:#9aa6b7;font-size:21px;font-weight:950}
+.step .n{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#eef2f7;color:#7a8494;font-size:22px;font-weight:950;border:3px solid #dfe5ee}
+.step b{display:block;font-size:9.8px}.step span{display:block;font-size:8px;color:var(--muted);margin-top:1px}
+.step.pending{opacity:.58}.step.done{border-color:#bde2cc;background:#f6fcf8}.step.done .n{background:var(--green);border-color:var(--green);color:#fff}.step.done b::after{content:" ✓";color:var(--green)}
+.step.active{border-color:#77a3ee;background:#eef5ff;box-shadow:0 0 0 3px rgba(54,120,229,.1)}.step.active .n{background:var(--blue);border-color:var(--blue);color:#fff;animation:pulseStep 1.4s infinite}
+.step.active::before{content:"▼ ทำขั้นนี้";position:absolute;left:50%;bottom:-14px;transform:translateX(-50%);background:var(--blue);color:#fff;font-size:7.5px;font-weight:950;padding:2px 6px;border-radius:999px;white-space:nowrap;z-index:8}
+@keyframes pulseStep{0%,100%{box-shadow:0 0 0 0 rgba(54,120,229,.18)}50%{box-shadow:0 0 0 7px rgba(54,120,229,0)}}
+
+.workspace{display:grid;grid-template-columns:1.2fr 1.72fr 1fr;gap:6px;min-height:0;margin-top:8px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);min-height:0}
+.left,.center,.right{padding:7px;min-height:0}
+.title{font-size:9.8px;font-weight:950;color:#344054;margin:0 0 4px}.sub{font-size:8.1px;color:var(--muted);line-height:1.3}
+.scenarios{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+.scenario{border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px;text-align:center;min-height:43px;transition:.15s}
+.scenario:hover{transform:translateY(-1px)}.scenario.active{background:#eef5ff;border-color:#83a8ec;box-shadow:inset 0 0 0 2px #dce8ff}
+.scenario .ico{font-size:15px}.scenario .nm{font-size:7.8px;font-weight:900;line-height:1.1}.scenario.custom{grid-column:span 4;background:#faf8ff}
+.info{margin-top:4px;border:1px solid var(--line);border-radius:8px;padding:5px;background:#fbfcfe}.info b{font-size:8.6px;color:var(--navy)}.info div{font-size:8px;color:var(--muted);line-height:1.25;margin-top:1px}
+
+.qualityRow{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-top:4px}.q{border:1px solid var(--line);border-radius:7px;padding:4px;background:#fafbfd}.q b{font-size:9px;color:var(--navy)}.q span{display:block;font-size:6.7px;color:var(--muted)}
+.tableHead{display:flex;justify-content:space-between;gap:5px;align-items:center;margin-top:4px}.rowCount{font-size:7.8px;color:#526075;background:#eef2f7;border-radius:999px;padding:2px 6px;font-weight:900}
+.tableWrap{margin-top:3px;border:1px solid var(--line);border-radius:8px;overflow-y:auto;overflow-x:auto;max-height:242px;scrollbar-gutter:stable}
+table{width:100%;border-collapse:collapse;font-size:7.8px}th,td{padding:3px 4px;border-bottom:1px solid #edf0f4;text-align:left;white-space:nowrap;height:19px}th{position:sticky;top:0;background:#f7f9fc;z-index:2;font-size:7.4px}
+tr.flashRow{animation:rowFlash .8s ease}@keyframes rowFlash{0%{background:#fff7d8}100%{background:transparent}}tr.excludedRow{background:#fff7f8!important;color:#8b5c63}tr.excludedRow td{opacity:.72}tr.excludedRow td:nth-child(1){box-shadow:inset 3px 0 0 #d95663}.excludedTag{background:#fde8eb;color:#a63d49}
+.tag{display:inline-block;padding:1px 4px;border-radius:999px;font-size:6.8px;font-weight:950}.train{background:#e8f0ff;color:#2d62c3}.test{background:#fff1dd;color:#9a5b00}.issue{background:#feecef;color:#ad3c49}.clean{background:#eaf8ef;color:#217848}
+
+.head{display:flex;justify-content:space-between;gap:5px;align-items:flex-start}.head h2{margin:0;color:var(--navy);font-size:14px}
+.focus{display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end}.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 5px;font-size:7.5px;font-weight:900;color:#596273}.pill.active{background:var(--navy);border-color:var(--navy);color:#fff}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin:4px 0}.stat{border:1px solid var(--line);background:#fafbfd;border-radius:7px;padding:4px}.stat .k{font-size:6.6px;color:var(--muted);font-weight:800}.stat .v{font-size:10px;font-weight:950;color:var(--navy)}
+#chartWrap{height:305px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;position:relative}
+#chart{width:100%;height:100%;display:block}
+.overlayNote{position:absolute;top:7px;left:7px;max-width:74%;padding:4px 7px;border-radius:8px;background:rgba(255,255,255,.95);border:1px solid var(--line);font-size:7.5px;color:#566070;pointer-events:none}
+.trainScore{position:absolute;right:7px;top:7px;padding:5px 7px;border-radius:9px;background:rgba(244,241,255,.96);border:1px solid #ddd5ff;color:#513da4;font-size:8px;font-weight:900;display:none}
+.trainScore.show{display:block}
+.sceneAnim{position:absolute;right:8px;bottom:8px;font-size:23px;pointer-events:none;filter:drop-shadow(0 3px 6px rgba(0,0,0,.08))}
+.sceneAnim.walk{animation:walk 2.2s ease-in-out infinite}.sceneAnim.grow{animation:grow 2.1s ease-in-out infinite}.sceneAnim.pulse{animation:energy 1.4s ease-in-out infinite}.sceneAnim.float{animation:float 2s ease-in-out infinite}
+@keyframes walk{0%{transform:translateX(-10px)}50%{transform:translateX(8px) translateY(-2px)}100%{transform:translateX(-10px)}}
+@keyframes grow{0%,100%{transform:scale(.9)}50%{transform:scale(1.15) translateY(-3px)}}
+@keyframes energy{0%,100%{transform:scale(.95);opacity:.75}50%{transform:scale(1.15);opacity:1}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.spark{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,rgba(54,120,229,.14),transparent 40%)}.spark.on{animation:flash .7s ease}@keyframes flash{0%{opacity:0}35%{opacity:1}100%{opacity:0}}
+
+.modelrow{display:grid;grid-template-columns:1fr 1.22fr;gap:3px;margin-top:4px}.model,.meaning{border:1px solid var(--line);border-radius:8px;padding:5px 7px}.model{background:linear-gradient(135deg,#f7f9ff,#f7f4ff)}.meaning{background:var(--softG);border-color:#d6ebdf}
+.label{font-size:6.7px;text-transform:uppercase;letter-spacing:.05em;color:#7c8594;font-weight:900}.formula{font-family:"Cambria Math","Times New Roman",serif;font-size:15px;font-weight:700;color:#2f4778}.meaningtxt{font-size:7.7px;color:#4d596d;line-height:1.28}
+.feedback{border-radius:8px;padding:5px;font-size:7.8px;line-height:1.3;margin-top:4px}.feedback.ok{background:var(--softG);border:1px solid #d6ebdf;color:#216b48}.feedback.warn{background:var(--softO);border:1px solid #ffe0ba;color:#7a552a}.feedback.bad{background:var(--softR);border:1px solid #f6ccd3;color:#953a47}
+
+.coach{background:linear-gradient(135deg,#f8fbff,#fff);border:1px solid #dce8f8;border-radius:9px;padding:6px}.coach .ey{font-size:7px;color:#5672a0;font-weight:900}.coach .task{font-size:11px;color:var(--navy);font-weight:950;margin:1px 0}.coach .why{font-size:7.7px;color:var(--muted);line-height:1.3}
+.action{border:1px solid var(--line);border-radius:8px;padding:5px;background:#fff}.action h4{margin:0 0 3px;font-size:8.5px;color:#344054}
+.row{display:flex;gap:3px;align-items:center;flex-wrap:wrap}.btn{border:none;border-radius:7px;padding:5px 6px;font-size:7.7px;font-weight:950;transition:.15s}.btn:hover{transform:translateY(-1px)}
+.btn.primary{background:var(--blue);color:#fff}.btn.dark{background:var(--navy);color:#fff}.btn.green{background:#e9f8ef;color:#197047}.btn.orange{background:#fff1df;color:#9c6015}.btn.red{background:#feecef;color:#a83d49}.btn.soft{background:#eef2f7;color:#344054}.btn.ghost{background:#fff;border:1px solid var(--line);color:#344054}.btn.cyan{background:#e9f9fb;color:#147884}.btn.full{width:100%}.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+input[type=range]{width:100%;accent-color:var(--blue)}.pred{display:grid;grid-template-columns:1fr auto;gap:3px;align-items:center}.predv{min-width:57px;border:1px solid var(--line);border-radius:7px;padding:4px;text-align:center;font-size:11px;font-weight:950;color:var(--navy);background:#fafbfd}
+.testFlow{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-top:4px}.flowBox{border:1px solid var(--line);border-radius:6px;padding:3px;text-align:center;background:#fafbfd;font-size:6.8px;color:#667085;min-height:28px;display:flex;align-items:center;justify-content:center;line-height:1.15}.flowBox.on{background:#eef5ff;border-color:#98b7ef;color:#295da9;font-weight:900}.testDetail{margin-top:3px;padding:4px 5px;border-radius:7px;background:#fff8ec;border:1px solid #ffe1b8;color:#7a552a;font-size:7.2px;line-height:1.25;min-height:27px}
+details.more{border:1px dashed #cfd8e5;border-radius:8px;padding:5px;background:#fbfcfe}details.more summary{cursor:pointer;font-size:7.7px;font-weight:950;color:#50607a}.tip{font-size:7.2px;color:#7a552a;background:var(--softO);border:1px solid #ffe0ba;border-radius:7px;padding:4px 5px;line-height:1.25;margin:3px 0}
+.finding{width:100%;min-height:36px;border:1px solid var(--line);border-radius:7px;padding:4px;font-size:7.7px;resize:none}.finish{display:grid;grid-template-columns:repeat(2,1fr);gap:3px}
+
+.challenge{border:1px solid #dcd5ff;background:#faf8ff;border-radius:8px;padding:5px}
+.challengeTitle{display:flex;align-items:center;gap:4px;font-size:8px;font-weight:950;color:#513da4}.challengeTitle .miniN{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--violet);color:#fff;font-size:10px}
+.challengeStatus{font-size:7.2px;color:#635c79;margin-top:3px;line-height:1.25}
+.challengeScore{font-size:8px;font-weight:950;color:#513da4;margin-left:auto}
+.quiz{border:1px solid #dce5f7;background:#f8fbff;border-radius:8px;padding:5px}.quizTitle{font-size:7.8px;font-weight:950;color:var(--navy)}.qline{font-size:7.2px;margin-top:3px;color:#475467}.choice{display:block;font-size:6.9px;margin:1px 0}.quizResult{margin-top:3px;font-size:7.2px;font-weight:900}
+.selfRow{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-top:4px}.selfBtn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:4px 2px;font-size:6.8px;font-weight:900}.selfBtn.on{background:#eef8f2;border-color:#a9d8bc;color:#217148}
+
+.bottom{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:11px;padding:5px 8px;box-shadow:var(--shadow)}.bottom b{font-size:8.6px;color:var(--navy)}.bottom span{font-size:7.6px;color:var(--muted)}
+.modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.72);z-index:100;align-items:center;justify-content:center;padding:12px}.modal.show{display:flex}.modalCard{width:min(1000px,96vw);max-height:92vh;overflow:auto;background:#fff;border-radius:16px;padding:12px;box-shadow:0 24px 70px rgba(0,0,0,.25)}
+.modalHead{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.modalHead h2{margin:0;color:var(--navy);font-size:17px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:7px}.plannerGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.plannerPreview{margin-top:8px;border:1px solid var(--line);border-radius:9px;padding:7px;background:#fbfcfe}.plannerStats{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px}.plannerStat{border:1px solid var(--line);border-radius:7px;padding:5px;background:#fff}.plannerStat b{display:block;color:var(--navy);font-size:10px}.plannerStat span{font-size:7px;color:var(--muted)}
+input[type=text],textarea{width:100%;border:1px solid var(--line);border-radius:7px;padding:5px 6px}
+.reportGrid{display:grid;grid-template-columns:1.1fr .9fr;gap:6px;margin-top:7px}.reportCard{border:1px solid var(--line);border-radius:9px;padding:7px;background:#fff}.reportCard h3{margin:0 0 4px;font-size:10px;color:var(--navy)}
+.trace{max-height:220px;overflow:auto}.traceItem{border-left:3px solid #dbe5f6;background:#fafbfd;border-radius:0 7px 7px 0;padding:5px 6px;margin:3px 0;font-size:8.5px}
+.checklist{display:grid;gap:3px}.check{display:flex;gap:5px;align-items:flex-start;font-size:8.5px}.check .c{width:17px;height:17px;border-radius:50%;display:grid;place-items:center;flex:none;background:#eef2f7;color:#667085;font-weight:900}.check.done .c{background:#e8f7ee;color:#24764f}.check.next .c{background:#eaf2ff;color:#2c65c6}
+.present{min-height:60vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background:linear-gradient(135deg,#fff,#f4f8ff);border-radius:12px;padding:26px}.present h2{font-size:28px;color:var(--navy);margin:0 0 9px}.present .big{font-size:17px;line-height:1.48;max-width:800px}
+.groupGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:7px}.idea{border:1px solid var(--line);border-radius:8px;padding:7px;background:#fff}.idea b{font-size:9px;color:var(--navy)}.idea p{font-size:8px;color:var(--muted);margin:3px 0 0;line-height:1.3}
+.toast{position:fixed;right:10px;bottom:10px;background:#1f2937;color:#fff;padding:6px 9px;border-radius:7px;opacity:0;pointer-events:none;transition:.2s;z-index:200;font-size:8px}.toast.show{opacity:1}
+@media(max-width:1100px){.stage{width:100%;min-height:100vh}.workspace{grid-template-columns:1fr}.timeline{grid-template-columns:repeat(4,1fr)}.step.active::before{display:none}.tableWrap{max-height:260px}.right{display:grid;grid-template-columns:repeat(2,1fr);gap:4px}}
+
+/* CLEAR STEP CARDS + COLLECT MORE DATA */
+.stepBox{border:2px solid #e3e9f2;border-radius:10px;padding:5px 6px;background:#fff;position:relative}
+.stepBox.activeBox{border-color:#8eb0ef;background:#f7faff;box-shadow:0 0 0 2px rgba(54,120,229,.07)}
+.stepHead{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.stepNum{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--blue);font-weight:950;font-size:12px;flex:none}
+.stepNum.green{background:var(--green)}.stepNum.orange{background:var(--orange)}.stepNum.violet{background:var(--violet)}
+.stepHead b{font-size:8.5px;color:#344054}.stepHead span{font-size:7px;color:var(--muted)}
+.moreDataBox{border:2px solid #cfe8da;background:#f7fcf9;border-radius:10px;padding:6px}
+.predictChoice{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:4px 0}
+.predictChoice button{border:1px solid #cfd8e5;background:#fff;border-radius:7px;padding:5px 2px;font-size:7px;font-weight:900;color:#526075}
+.predictChoice button.on{background:#e9f8ef;border-color:#9ed2b4;color:#216b48}
+.compareMini{display:grid;grid-template-columns:1fr auto 1fr;gap:4px;align-items:center;margin-top:4px}
+.compareCard{border:1px solid var(--line);border-radius:7px;padding:4px;background:#fff;font-size:7px;line-height:1.25}
+.compareCard b{display:block;color:var(--navy);font-size:8px;margin-bottom:2px}.compareArrow{font-size:16px;color:#7d8ca2;font-weight:900}
+.lockNote{font-size:7px;color:#536273;background:#eef5ff;border:1px solid #d7e6ff;border-radius:7px;padding:4px;margin-top:3px}
+.newPointTag{background:#e6f8fb;color:#147884}
+.challengeDivider{margin-top:5px;padding-top:5px;border-top:2px dashed #ddd5ff}
+
+
+/* ===== v9 MINIMAL LEARNING THEME ===== */
+:root{
+  --bg:#f7f8fa;--paper:#ffffff;--ink:#1f2937;--muted:#6b7280;--line:#e5e7eb;
+  --navy:#26364d;--blue:#3b82f6;--green:#22c55e;--orange:#f59e0b;--violet:#8b5cf6;--red:#ef4444;
+  --cyan:#06b6d4;--softB:#eff6ff;--softG:#f0fdf4;--softO:#fffbeb;--softR:#fef2f2;--softV:#f5f3ff;
+  --shadow:0 4px 14px rgba(15,23,42,.06)
+}
+body{background:#f4f6f8}
+.stage{background:#f4f6f8;gap:8px;padding:10px}
+.hero{background:#fff;border-radius:14px;padding:10px 14px;box-shadow:none}
+.hero h1{font-size:24px}.hero p{font-size:10px}.key{background:#f8fafc;border-color:#e5e7eb;color:#475569}
+.badge{background:#f8fafc;border-color:#e5e7eb;color:#475569}
+.card{box-shadow:none;border-color:#e5e7eb}
+.timeline{gap:6px}
+.step{min-height:64px;border-width:1px;border-radius:12px;box-shadow:none}
+.step .n{width:42px;height:42px;font-size:22px;border-width:2px}
+.step.done{background:#f7fcf9}.step.active{background:#f4f8ff;box-shadow:none}
+.step.active::before{font-size:8px;bottom:-13px}
+.stepBox,.moreDataBox,.challenge{box-shadow:none;border-width:1px}
+.stepBox.activeBox{box-shadow:none;border-width:2px}
+.stepHead b{font-size:9px}.stepHead span{font-size:7.2px}
+.btn{border-radius:8px;padding:6px 8px}
+.feedback{border-radius:8px}
+#chartWrap{border-radius:10px}
+.scoreStrip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:7px}
+.scoreCard{border:1px solid var(--line);background:#fff;border-radius:10px;padding:7px 9px}
+.scoreCard .slabel{font-size:7px;color:var(--muted);font-weight:800}
+.scoreCard .svalue{font-size:15px;color:var(--navy);font-weight:950;line-height:1.1}
+.scoreCard .shint{font-size:6.8px;color:var(--muted);margin-top:2px}
+.masteryBar{height:6px;background:#eef2f6;border-radius:999px;overflow:hidden;margin-top:4px}
+.masteryBar>div{height:100%;background:var(--green);width:0%;transition:.25s}
+.coreComplete{background:#f0fdf4!important;border-color:#bbf7d0!important}
+.currentGlow{border-color:#93c5fd!important;background:#f8fbff!important}
+.lockedBox{opacity:.46}
+.phaseHeader{display:flex;align-items:center;gap:7px;margin:3px 0 4px}
+.phaseCircle{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--navy);font-weight:950;font-size:12px}
+.phaseTitle{font-size:10px;font-weight:950;color:#334155}
+.phaseHint{font-size:7px;color:var(--muted)}
+.evidenceTag{display:inline-block;font-size:6.8px;font-weight:900;padding:2px 5px;border-radius:999px;background:#f1f5f9;color:#475569}
+
+
+#box3 select,#splitHint,#splitBtn{display:none!important}
+@media(max-width:1100px){.scoreStrip{grid-template-columns:1fr 1fr}}
+
+.learningWhy{margin-top:5px;border:1px solid #dbe4ef;border-radius:9px;padding:6px;background:#f8fafc;font-size:7.4px;line-height:1.35;color:#475569}
+.learningWhy b{color:#26364d}
+.teacherReady{border:1px solid #cfe8da;background:#f7fcf9;border-radius:10px;padding:7px;margin-top:5px;font-size:7.6px;line-height:1.35}
+.scoreBreak{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:6px}
+.scorePart{border:1px solid #e5e7eb;border-radius:8px;padding:5px;background:#fff;text-align:center}
+.scorePart b{font-size:12px;color:#26364d}.scorePart span{display:block;font-size:6.6px;color:#6b7280;margin-top:2px}
+
+</style>
+</head>
+<body>
+<div class="stage">
+<header class="hero">
+  <div><h1>My ML Journey</h1><p>Linear Regression สำหรับ ม.1 — เรียนทีละขั้นจากข้อมูลใกล้ตัว เห็นว่า AI เรียนรู้จาก Data อย่างไร ทำนายได้อย่างไร และเราจะเชื่อ Model ได้แค่ไหน</p></div>
+  <div class="badge">ม.1 • ทีละขั้น • เห็นภาพ • ลองใช้จริง</div>
+  <div class="key">จำง่าย ๆ: <b>Data ที่ดี → AI เรียนรู้ Pattern → ได้ Model → ใช้ทำนาย → Test กับข้อมูลที่ไม่เคยเห็น</b> • AI ไม่ได้เก่งเอง ความน่าเชื่อถือของ Model ขึ้นกับข้อมูลและการตรวจสอบ</div>
+</header>
+
+<div class="scoreStrip" style="grid-template-columns:1.2fr 1fr">
+  <div class="scoreCard">
+    <div class="slabel">เส้นทางการเรียนรู้วันนี้</div>
+    <div class="svalue" id="coreProgress">0/5 ขั้น</div>
+    <div class="masteryBar"><div id="coreBar"></div></div>
+    <div class="shint">ค่อย ๆ ทำทีละขั้น ไม่ต้องรีบ — ระบบจะบอกว่าขั้นต่อไปคืออะไร</div>
+  </div>
+  <div class="scoreCard">
+    <div class="slabel">คะแนนความเข้าใจ</div>
+    <div class="svalue" id="masteryScoreV9">0/10</div>
+    <div class="shint">เต็ม 10 จาก 5 ด้าน: Data/Clean • Train/Model • Prediction • Test/Error • Application</div>
+  </div>
+</div>
+
+
+<section class="timeline" style="grid-template-columns:repeat(5,1fr)">
+  <div class="step active"><div class="n">1</div><div><b>ดู Data</b><span>x และ y คืออะไร?</span></div></div>
+  <div class="step pending"><div class="n">2</div><div><b>Clean</b><span>หาแถวที่ควรระวัง</span></div></div>
+  <div class="step pending"><div class="n">3</div><div><b>Train</b><span>AI หา Best Line</span></div></div>
+  <div class="step pending"><div class="n">4</div><div><b>Predict</b><span>ลองทำนายค่าใหม่</span></div></div>
+  <div class="step pending"><div class="n">5</div><div><b>Test</b><span>ตรวจ Model กับข้อมูลใหม่</span></div></div>
+</section>
+
+<main class="workspace">
+<aside class="card left">
+  <div class="title">① เลือกสถานการณ์</div>
+  <div class="scenarios" id="scenarioList"></div>
+  <div class="info"><b>คำถาม</b><div id="mission"></div></div><div class="info" style="background:#fffdf5;border-color:#f3e7b5"><b>ใช้จริงในชีวิตประจำวัน</b><div id="lifeUse"></div></div>
+  <div class="qualityRow"><div class="q"><b id="readyN">0</b><span>พร้อมใช้</span></div><div class="q"><b id="issueN">0</b><span>พบ/ไฮไลต์</span></div><div class="q"><b id="corrN">–</b><span>แนวโน้ม r</span></div></div>
+  <div class="tableHead"><div class="title" style="margin:0">② Dataset Table — ดูทุกขั้น</div><div class="rowCount" id="rowCount">0 แถว</div></div>
+  <div class="tableWrap"><table><thead><tr><th>#</th><th id="xh">x</th><th id="yh">y</th><th>สถานะ</th><th>ชุด</th><th>ŷ</th><th>|Error|</th></tr></thead><tbody id="tbody"></tbody></table></div>
+</aside>
+
+<section class="card center">
+  <div class="head"><div><h2 id="title"></h2><div class="sub" id="axisText"></div></div>
+    <div class="focus"><button class="pill active" data-focus="all">ทั้งหมด</button><button class="pill" data-focus="model">Best Line</button><button class="pill" data-focus="error">ระยะ Error</button><button class="pill" data-focus="prediction">Prediction</button><button class="pill" id="speakBtn">🔊 ฟัง</button></div>
+  </div>
+  <div class="stats"><div class="stat"><div class="k">Dataset</div><div class="v" id="datasetN">0</div></div><div class="stat"><div class="k">Train / Test</div><div class="v" id="splitN">–</div></div><div class="stat"><div class="k">Train Error (RMSE)</div><div class="v" id="trainErr">–</div></div><div class="stat"><div class="k">Test Error (RMSE)</div><div class="v" id="testErr">–</div></div></div>
+  <div id="chartWrap">
+    <canvas id="chart"></canvas>
+    <div class="overlayNote" id="overlayNote">กราฟเริ่มจาก (0,0) • ตัวเลขเล็กใกล้จุดคือ (x,y)</div>
+    <div class="trainScore" id="trainScore">ลองเส้น 1/5 • RMSE = –</div>
+    <div class="sceneAnim float" id="sceneAnim">📚✏️</div>
+    <div class="spark" id="spark"></div>
+  </div>
+  <div class="modelrow">
+    <div class="model"><div class="label">Linear Regression Model</div><div class="formula">ŷ = b₀ + b₁x</div><div class="formula" id="formula">ยังไม่ได้ Train</div></div>
+    <div class="meaning"><div class="label">ทำไมเส้นนี้ดีที่สุด?</div><div class="meaningtxt" id="meaning">ตอน Train จะเห็นเส้นหลายเส้น พร้อมระยะ Error ของแต่ละจุด และ RMSE ที่เปลี่ยนไป จนพบเส้นที่มี RMSE ต่ำที่สุด</div></div>
+  </div>
+  <div class="feedback warn" id="conceptMsg">เริ่มจาก Table: หา Missing / Duplicate ก่อน</div>
+</section>
+
+<aside class="card right">
+  <div class="coach"><div class="ey">▶ ทำทีละขั้น</div><div class="task" id="nextTask"></div><div class="why" id="nextWhy"></div></div>
+
+  <div class="stepBox" id="box2">
+    <div class="stepHead"><div class="stepNum green">2</div><div><b>Clean Data</b><span>ก่อนกด ลองมองหาแถวที่ผิด/ซ้ำก่อน</span></div></div>
+    <div class="sub" style="margin-bottom:4px">💭 ฉันเห็นแถวที่น่าสงสัยหรือยัง?</div>
+    <button class="btn green full" id="cleanBtn">🧹 ตรวจและ Clean</button><div class="learningWhy"><b>ทำไม?</b> ถ้า Data ผิด ซ้ำ หรือขาดหาย AI อาจเรียนรู้ Pattern ผิด และทำนายคลาดเคลื่อนได้</div>
+  </div>
+
+  <div class="stepBox" id="box3">
+    <div class="stepHead"><div class="stepNum">3</div><div><b>Train Model</b><span>ระบบแบ่ง Training/Test ให้อัตโนมัติ 80/20</span></div></div>
+    <div class="sub" style="margin-bottom:4px">🎯 ลองเดาก่อน: เส้นที่ดีควรอยู่ใกล้จุดส่วนใหญ่ใช่ไหม?</div>
+    <button class="btn primary full" id="trainBtn">🎬 ให้ AI ลองหลายเส้น → Best Line</button><div class="learningWhy"><b>Training / Test:</b> ระบบเก็บบางจุดไว้เป็น Test โดยไม่ให้ AI ใช้เรียน เพื่อดูว่า Model ใช้กับข้อมูลใหม่จริงได้หรือไม่</div>
+  </div>
+
+  <div class="stepBox" id="box4">
+    <div class="stepHead"><div class="stepNum orange">4</div><div><b>ลอง Prediction</b><span>ขยับ x แล้วดูค่า ŷ ที่ Model ทำนาย</span></div></div>
+    <div class="pred"><div><div class="sub" id="predictLabel"></div><input type="range" id="predictX"></div><div class="predv" id="predictY">–</div></div>
+    <div class="sub" id="predictSentence" style="margin:2px 0 3px"></div><div class="learningWhy"><b>Prediction:</b> เราใส่ค่า x ใหม่เข้า Model แล้ว Model ให้ค่าประมาณ ŷ ออกมา — เป็น “ค่าทำนาย” ไม่ใช่ค่าจริงเสมอไป</div>
+  </div>
+
+  <div class="stepBox" id="box5">
+    <div class="stepHead"><div class="stepNum violet">5</div><div><b>Test Model</b><span>ใช้ข้อมูลที่ AI ไม่เคยเห็นตอน Train</span></div></div>
+    <div class="testFlow"><div class="flowBox" id="flow1">1 x_test</div><div class="flowBox" id="flow2">2 ŷ_predict</div><div class="flowBox" id="flow3">3 y_actual</div><div class="flowBox" id="flow4">4 |Error|</div></div>
+    <div class="testDetail" id="testDetail">ค่อย ๆ ดูทีละขั้นว่า Model ทำนายข้อมูลใหม่อย่างไร</div>
+    <button class="btn orange full" id="testBtn" disabled style="margin-top:4px">🎬 เล่น Test Animation</button><div class="learningWhy"><b>ทำไมต้อง Test?</b> ถ้าใช้ข้อมูลเดิมที่ AI เคยเห็นมาตรวจ เราอาจคิดว่า AI เก่งเกินจริง จึงต้องลองกับข้อมูลที่ไม่เคยใช้ Train</div>
+  </div>
+
+  <div class="challenge challengeDivider" id="coreCompleteBox">
+    <div class="challengeTitle"><span class="miniN">✓</span> Core Complete</div>
+    <div class="challengeStatus" id="coreCompleteText">ทำครบ 5 ขั้นก่อน แล้วระบบจะเปิดกิจกรรมต่อยอดให้</div>
+  </div>
+
+  <div class="challenge challengeDivider" id="experimentBox">
+    <div class="challengeTitle"><span class="miniN">🌱</span> ทดลองต่อยอด: ถ้ามี Data เพิ่ม +5?</div>
+    <div class="challengeStatus" id="challengeStatus">กิจกรรมนี้ไม่ใช่ขั้นบังคับ แต่ช่วยให้เห็นว่า “ข้อมูลมากขึ้น” ไม่ได้แปลว่า “Model ดีขึ้นเสมอ”</div>
+    <div class="predictChoice">
+      <button data-moreguess="มาก">เปลี่ยนมาก</button>
+      <button data-moreguess="น้อย">เปลี่ยนน้อย</button>
+      <button data-moreguess="ไม่แน่ใจ">ไม่แน่ใจ</button>
+    </div>
+    <div class="row"><button class="btn cyan" id="collect5Btn" disabled>🌱 เพิ่ม Data +5</button><button class="btn primary" id="retrainBtn" disabled>🤖 Train ใหม่</button></div>
+    <div class="lockNote" id="moreNote">ทำ Core 5 ขั้นให้จบก่อน แล้วค่อยลอง</div>
+    <div class="compareMini" id="moreCompare" style="display:none">
+      <div class="compareCard"><b>Model A</b><span id="beforeModelText">–</span><br>Test Error: <strong id="beforeTestText">–</strong></div>
+      <div class="compareArrow">→</div>
+      <div class="compareCard"><b>Model B</b><span id="afterModelText">–</span><br>Test Error: <strong id="afterTestText">–</strong></div>
+    </div>
+  </div>
+
+  <details class="more" id="checkBox">
+    <summary>✅ Check ความเข้าใจรายบุคคล — 5 ด้าน / 10 คะแนน</summary>
+    <div class="qline">1) Data & Clean — ทำไมต้อง Clean ก่อนให้ AI เรียนรู้?</div>
+    <label class="choice"><input type="radio" name="q1" value="a"> เพื่อให้ตารางสวยขึ้น</label>
+    <label class="choice"><input type="radio" name="q1" value="b"> เพราะข้อมูลผิด/ซ้ำ/ขาด อาจทำให้ AI เรียนรู้ Pattern ผิด</label>
+
+    <div class="qline">2) Train & Model — ข้อใดอธิบายได้ดีที่สุด?</div>
+    <label class="choice"><input type="radio" name="q2" value="a"> Training ใช้ให้ AI เรียนรู้ ส่วน Test เก็บไว้ตรวจข้อมูลที่ AI ไม่เคยเห็น</label>
+    <label class="choice"><input type="radio" name="q2" value="b"> Training และ Test ควรเป็นข้อมูลชุดเดียวกันทั้งหมดเพื่อให้คะแนนสูง</label>
+
+    <div class="qline">3) Prediction — เมื่อเราใส่ x ใหม่เข้า Model ค่า ŷ คืออะไร?</div>
+    <label class="choice"><input type="radio" name="q3" value="a"> ค่าทำนายจาก Model ซึ่งอาจต่างจากค่าจริงได้</label>
+    <label class="choice"><input type="radio" name="q3" value="b"> ค่าจริงที่ถูกต้องแน่นอน</label>
+
+    <div class="qline">4) Test & Error — ถ้า Test Error สูง หมายความว่าอย่างไร?</div>
+    <label class="choice"><input type="radio" name="q4" value="a"> Model ทำนายข้อมูลใหม่คลาดเคลื่อนมาก ควรระวังก่อนนำไปใช้</label>
+    <label class="choice"><input type="radio" name="q4" value="b"> Model เก่งมาก เพราะ Error สูง</label>
+
+    <div class="qline">5) Application — ข้อใดเหมาะสมที่สุดเมื่อนำ Model ไปใช้จริง?</div>
+    <label class="choice"><input type="radio" name="q5" value="a"> ใช้ค่าทำนายเป็นคำตอบจริงเสมอ ไม่ต้องดู Error</label>
+    <label class="choice"><input type="radio" name="q5" value="b"> ใช้ Model ช่วยประมาณ/ตัดสินใจ แต่ต้องดู Error คุณภาพ Data และข้อจำกัด</label>
+
+    <button class="btn primary" id="checkQuiz" style="margin-top:5px">ตรวจความเข้าใจ</button>
+    <span class="quizResult" id="quizResult"></span>
+    <div class="scoreBreak" id="scoreBreak"></div>
+  </details>
+
+  <div class="challenge challengeDivider" id="newChallengeBox">
+    <div class="challengeTitle"><span class="miniN">★</span> Transfer Challenge — ลองกับ Dataset ใหม่</div>
+    <div class="challengeStatus">เปลี่ยนสถานการณ์/ข้อมูล แล้วทำ Core เดิมอีกครั้งโดยใช้คำใบ้น้อยลง เพื่อดูว่านำความเข้าใจไปใช้กับโจทย์ใหม่ได้หรือไม่</div>
+    <div class="row" style="margin-top:4px"><button class="btn cyan" id="newChallenge">🧪 Generate ใหม่</button><button class="btn ghost" id="ownChallenge">✍️ ใส่ Data เอง</button></div>
+  </div>
+  <div class="teacherReady" id="teacherReadyBox">
+    <b>📤 พร้อมส่งครูหรือยัง?</b>
+    <div id="teacherReadyText">ต้องมี Core 5/5 + Understanding Check + Transfer Challenge + Reflection</div>
+  </div>
+
+  <div class="action"><h4>Reflection — ฉันจะใช้ Model อย่างไร?</h4>
+  <textarea id="finding" class="finding" placeholder="ตอบสั้น ๆ 2–3 ประโยค: 1) Model นี้ช่วยอะไรในชีวิตจริงได้? 2) เมื่อไรที่เราไม่ควรเชื่อค่าทำนายมากเกินไป?"></textarea>
+  <div class="learningWhy"><b>เป้าหมาย:</b> อธิบายด้วยภาษาของตนเองว่า Model เป็นเครื่องมือช่วยประมาณค่า ไม่ใช่คำตอบที่ถูกต้อง 100%</div>
+</div>
+  <div class="finish" style="grid-template-columns:1.2fr 1fr 1fr"><button class="btn dark" id="reportBtn">📄 ดู Report ก่อนส่ง</button><button class="btn soft" id="saveJson">💾 ส่ง JSON</button><button class="btn soft" id="loadJson">📂 Load</button><input type="file" id="jsonFile" accept=".json" hidden></div>
+</aside>
+</main>
+
+<footer class="bottom"><div><b>เป้าหมายของกิจกรรมนี้:</b><span> เรียนรู้ด้วยตนเอง → ตรวจความเข้าใจ → ลอง Dataset ใหม่ → สะท้อนการนำไปใช้ → ส่ง Report/JSON ให้ครู</span></div><div class="evidenceTag">Individual Learning Evidence</div></footer>
+</div>
+
+<!-- custom/challenge data -->
+<!-- collect/generate planner -->
+<div class="modal" id="generateModal"><div class="modalCard">
+  <div class="modalHead"><div><h2>Collect Data Planner — วางแผนก่อน Generate</h2><div class="sub">กำหนดจำนวนข้อมูลและช่วง x ก่อน ระบบจะ Generate เฉพาะในช่วงที่กำหนด แล้วตรวจคุณภาพก่อนให้ใช้</div></div><button class="btn ghost" data-close="generateModal">✕</button></div>
+  <div class="plannerGrid">
+    <div><div class="sub">สถานการณ์</div><select id="genScenario" style="width:100%;padding:6px;border:1px solid var(--line);border-radius:7px"></select></div>
+    <div><div class="sub">จำนวนข้อมูล</div><select id="genCount" style="width:100%;padding:6px;border:1px solid var(--line);border-radius:7px"><option>8</option><option selected>10</option><option>12</option><option>15</option></select></div>
+    <div><div class="sub">x ต่ำสุด</div><input id="genXmin" type="text"></div>
+    <div><div class="sub">x สูงสุด</div><input id="genXmax" type="text"></div>
+  </div>
+  <div class="tip" style="margin-top:7px"><b>ฝึก Collect Data:</b> ช่วง x ควรครอบคลุมสิ่งที่อยากศึกษา ไม่ควรกระจุกอยู่ใกล้ค่าเดียวกัน และไม่ควรตั้งช่วงเกินสถานการณ์จริง</div>
+  <div class="row" style="margin-top:6px"><button class="btn primary" id="previewGenerate">🎲 Generate Preview</button><button class="btn green" id="useGenerated" disabled>ใช้ Dataset นี้</button></div>
+  <div class="plannerPreview"><div id="genAdvice" class="feedback warn">กำหนดช่วง x แล้วกด Generate Preview</div><div class="plannerStats" id="genStats"></div><div class="tableWrap" style="max-height:220px"><table><thead><tr><th>#</th><th>x</th><th>y</th><th>ตรวจ</th></tr></thead><tbody id="genPreviewBody"></tbody></table></div></div>
+</div></div>
+
+<div class="modal" id="customModal"><div class="modalCard">
+  <div class="modalHead"><div><h2 id="customModalTitle">My Own / New Dataset</h2><div class="sub">ระบบจะตรวจความพร้อมก่อนอนุญาตให้ไป Clean → Split → Train</div></div><button class="btn ghost" data-close="customModal">✕</button></div>
+  <div class="fields"><div><div class="sub">ชื่อสถานการณ์</div><input id="customTitle" type="text"></div><div><div class="sub">คำถาม</div><input id="customMission" type="text"></div><div><div class="sub">x คือ</div><input id="customX" type="text"></div><div><div class="sub">y คือ</div><input id="customY" type="text"></div></div>
+  <div class="row" style="margin-top:6px"><button class="btn soft" id="exampleCustom">✨ ตัวอย่าง 10 จุด</button><span class="sub">เงื่อนไข: x,y ≥ 0 • x เป็นจำนวนเต็ม • ≥ 8 จุด • x หลากหลาย</span></div>
+  <textarea id="customPairs" style="min-height:145px;margin-top:5px" placeholder="5,600&#10;10,1100&#10;15,1700&#10;..."></textarea>
+  <div class="row" style="margin-top:6px"><button class="btn primary" id="checkCustom">🔎 ตรวจ Dataset</button><button class="btn green" id="useCustom" disabled>ใช้ Dataset นี้</button></div>
+  <div id="customFeedback" class="feedback warn">กรอกข้อมูลแล้วกด “ตรวจ Dataset”</div>
+</div></div>
+
+<div class="modal" id="reportModal"><div class="modalCard">
+  <div class="modalHead"><div><h2>Learning Evidence Report</h2><div class="sub">สรุป Core Progress + คะแนนความเข้าใจ 5 ด้าน + Transfer Challenge + Reflection + Learning Trace สำหรับส่งครู</div></div><button class="btn ghost" data-close="reportModal">✕</button></div>
+  <div class="fields"><div><div class="sub">ชื่อ–สกุล</div><input id="studentName" type="text"></div><div><div class="sub">ชั้น / ห้อง</div><input id="studentClass" type="text"></div></div>
+  <div id="reportBody"></div>
+  <div class="row" style="margin-top:7px"><button class="btn dark" id="reportPng">📸 Save PNG</button><button class="btn soft" id="printReport">🖨 Print / PDF</button><button class="btn soft" id="saveJson2">💾 Save JSON</button></div>
+</div></div>
+
+
+
+
+
+
+<div id="internalCompat" hidden>
+  <select id="splitRatio"><option value="80" selected>80</option></select>
+  <button id="splitBtn" type="button"></button>
+  <div id="splitHint"></div>
+  <span id="challengeScore">0/5</span>
+  <div id="masteryBar"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const presets=[
+ {icon:'📚',anim:'📚✏️',animClass:'float',name:'แบบฝึกหัด',life:'ช่วยวางแผนเวลาฝึกให้เหมาะกับเป้าหมายคะแนน',impact:'ถ้าทายคลาดมาก เราอาจวางแผนเวลาฝึกไม่เหมาะกับเป้าหมายจริง',x:'เวลาฝึก (นาที)',y:'คะแนน',xmin:10,xmax:70,ymin:30,ymax:100,mission:'เวลาฝึกสัมพันธ์กับคะแนนอย่างไร?',slope:.78,intercept:38,noise:6},
+ {icon:'😴',anim:'😴🌙',animClass:'float',name:'การนอน',life:'ช่วยสังเกตพฤติกรรมการนอนกับความสดชื่นของตนเอง โดยไม่สรุปว่าเป็นสาเหตุโดยตรง',impact:'ถ้าทายคลาดมาก แปลว่ายังมีปัจจัยอื่นที่ Model ไม่ได้เห็น เช่น ความเหนื่อยหรือกิจกรรมระหว่างวัน',x:'ชั่วโมงนอน',y:'คะแนนความสดชื่น',xmin:4,xmax:10,ymin:20,ymax:100,mission:'ชั่วโมงนอนสัมพันธ์กับความสดชื่นตอนเช้าอย่างไร?',slope:10,intercept:-10,noise:9},
+ {icon:'🚿',anim:'🚿💧',animClass:'float',name:'การใช้น้ำ',life:'ช่วยประมาณการใช้น้ำและคิดวิธีประหยัดน้ำในชีวิตประจำวัน',impact:'ถ้าทายคลาดมาก การวางแผนประหยัดน้ำอาจไม่ตรงกับการใช้จริง',x:'เวลาอาบน้ำ (นาที)',y:'น้ำที่ใช้โดยประมาณ (ลิตร)',xmin:4,xmax:20,ymin:20,ymax:170,mission:'เวลาอาบน้ำสัมพันธ์กับปริมาณน้ำที่ใช้อย่างไร?',slope:7,intercept:8,noise:10},
+ {icon:'💡',anim:'💡⚡',animClass:'pulse',name:'พลังงาน',life:'ช่วยมองพฤติกรรมการใช้ไฟและหาแนวทางประหยัดพลังงาน',impact:'ถ้าทายคลาดมาก การประมาณเวลาใช้ไฟหรือแนวทางประหยัดพลังงานอาจไม่แม่น',x:'เวลาอยู่ในห้องช่วงเย็น (นาที)',y:'เวลาเปิดไฟ (นาที)',xmin:30,xmax:360,ymin:10,ymax:360,mission:'เวลาอยู่ในห้องสัมพันธ์กับเวลาเปิดไฟอย่างไร?',slope:.82,intercept:10,noise:24},
+ {icon:'📖',anim:'📖✨',animClass:'float',name:'การอ่าน',life:'ช่วยประมาณเวลาที่ต้องใช้ก่อนเริ่มอ่านหนังสือหรือทำการบ้าน',impact:'ถ้าทายคลาดมาก เราอาจเผื่อเวลาอ่านน้อยหรือมากเกินไป',x:'จำนวนหน้า',y:'เวลาที่ใช้ (นาที)',xmin:5,xmax:50,ymin:5,ymax:100,mission:'จำนวนหน้าที่อ่านสัมพันธ์กับเวลาที่ใช้อย่างไร?',slope:1.55,intercept:7,noise:7},
+ {icon:'🚶',anim:'🚶‍♂️',animClass:'walk',name:'การเดิน',life:'ช่วยประมาณจำนวนก้าวจากเวลาที่เดินและวางแผนกิจกรรมประจำวัน',impact:'ถ้าทายคลาดมาก จำนวนก้าวจริงอาจต่างจากที่วางแผน เพราะความเร็วหรือเส้นทางต่างกัน',x:'เวลาเดิน (นาที)',y:'จำนวนก้าว',xmin:5,xmax:45,ymin:300,ymax:6500,mission:'เวลาเดินสัมพันธ์กับจำนวนก้าวอย่างไร?',slope:118,intercept:120,noise:280},
+ {icon:'🌱',anim:'🌱💧',animClass:'grow',name:'ต้นไม้',life:'ช่วยติดตามการเจริญเติบโตของต้นไม้และวางแผนดูแลจากข้อมูลที่บันทึก',impact:'ถ้าทายคลาดมาก แปลว่าเส้นตรงอาจยังอธิบายการเติบโตได้ไม่ดี หรือมีปัจจัยอื่น เช่น น้ำ แสง และอากาศ',x:'จำนวนวัน',y:'ความสูงต้นไม้ (ซม.)',xmin:1,xmax:30,ymin:2,ymax:45,mission:'จำนวนวันสัมพันธ์กับความสูงต้นไม้อย่างไร?',slope:1.05,intercept:5,noise:3}
+];
+let S={
+  preset:0,sc:null,raw:[],model:null,reveal:false,focus:'all',cleaned:false,split:false,custom:false,
+  history:[],finding:'',profile:{name:'',classroom:''},quiz:{score:null},self:{data:false,model:false,predict:false},
+  anim:{points:0,training:false,candidate:null,test:null},challenge:{active:false,started:false,completed:false,score:0},moreData:{guess:null,collected:false,retrained:false,before:null,after:null,newCount:0},testCompleted:false,splitPct:80,phase:'learn'
+};
+const $=id=>document.getElementById(id),canvas=$('chart'),ctx=canvas.getContext('2d');
+let dpr=Math.max(1,window.devicePixelRatio||1),slide=0,lastCustom=null,customMode='own';
+
+function randn(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500)}
+function pulse(){const e=$('spark');e.classList.remove('on');void e.offsetWidth;e.classList.add('on')}
+function chime(f=600,d=.09){try{const A=window.AudioContext||window.webkitAudioContext,a=new A(),o=a.createOscillator(),g=a.createGain();o.frequency.value=f;g.gain.setValueAtTime(.04,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+d);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}}
+function speak(t){if(!('speechSynthesis'in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='th-TH';u.rate=.92;speechSynthesis.speak(u)}
+function niceStep(range,target=5){const raw=Math.max(range,1)/target,p=10**Math.floor(Math.log10(raw)),n=raw/p;let m=n<=1?1:n<=2?2:n<=5?5:10;return Math.max(1,Math.round(m*p))}
+function axisBounds0(max){const step=niceStep(max,5);return{lo:0,hi:Math.max(step*5,Math.ceil(max/step)*step),step}}
+function generate(sc,n=8,withIssues=true){
+  const a=[],used=new Set(),step=Math.max(1,Math.round((sc.xmax-sc.xmin)/(n-1)));
+  for(let i=0;i<n;i++){let x=Math.round(sc.xmin+i*step);x=Math.min(sc.xmax,x);while(used.has(x)&&x<sc.xmax)x++;used.add(x);let y=Math.round(sc.intercept+sc.slope*x+randn()*sc.noise);y=Math.max(0,Math.min(sc.ymax,y));a.push({x,y,issue:null,set:null,deleted:false,excluded:false})}
+  if(withIssues){a.push({...a[2],issue:'duplicate',excluded:false});a.push({x:Math.round((sc.xmin+sc.xmax)/2),y:null,issue:'missing',set:null,deleted:false,excluded:false})}
+  return a
+}
+function valid(){return S.raw.filter(r=>!r.deleted&&!r.excluded&&!r.issue&&Number.isFinite(r.x)&&Number.isFinite(r.y))}
+function numericRows(){return S.raw.filter(r=>!r.deleted&&Number.isFinite(r.x)&&Number.isFinite(r.y))}
+function corr(rows){if(rows.length<2)return 0;const mx=rows.reduce((a,r)=>a+r.x,0)/rows.length,my=rows.reduce((a,r)=>a+r.y,0)/rows.length;let n=0,dx=0,dy=0;rows.forEach(r=>{n+=(r.x-mx)*(r.y-my);dx+=(r.x-mx)**2;dy+=(r.y-my)**2});return n/Math.sqrt(dx*dy||1)}
+function quality(rows){
+  const n=rows.length,ux=new Set(rows.map(r=>r.x)).size,uy=new Set(rows.map(r=>r.y)).size,r=corr(rows);let block=null,w=[];
+  if(n<8)block='ควรมีข้อมูลอย่างน้อย 8 จุดสำหรับแบบฝึกหัดนี้';
+  else if(ux<4)block='ค่า x ควรมีอย่างน้อย 4 ค่าที่แตกต่างกัน';
+  else if(uy<2)block='ค่า y ต้องมีความแตกต่าง';
+  else{if(n<10)w.push('ข้อมูลยังค่อนข้างน้อย');if(Math.abs(r)<.3)w.push('แนวโน้มเชิงเส้นอ่อน — Linear Regression อาจไม่เหมาะ');if(ux/n<.5)w.push('x กระจุกหรือซ้ำมาก ควรเก็บให้ครอบคลุมช่วงมากขึ้น')}
+  return{n,ux,uy,r,block,w}
+}
+function lr(rows){if(rows.length<2)return null;const n=rows.length,sx=rows.reduce((a,r)=>a+r.x,0),sy=rows.reduce((a,r)=>a+r.y,0),sxx=rows.reduce((a,r)=>a+r.x*r.x,0),sxy=rows.reduce((a,r)=>a+r.x*r.y,0),den=n*sxx-sx*sx;if(Math.abs(den)<1e-10)return null;const b1=(n*sxy-sx*sy)/den,b0=(sy-b1*sx)/n;return{b0,b1}}
+function rmse(rows,m){if(!m||!rows.length)return null;return Math.sqrt(rows.reduce((a,r)=>a+(r.y-(m.b0+m.b1*r.x))**2,0)/rows.length)}
+function snap(){return{phase:S.phase,dataset:S.raw.filter(r=>!r.deleted).length,cleaned:S.cleaned,split:S.split,trained:!!S.model,testOpened:S.reveal,formula:S.model?formula():'',trainError:S.model?.trainRmse??null,testError:S.reveal&&S.model?S.model.testRmse:null}}
+function log(action,detail=''){S.history.push({time:new Date().toLocaleString('th-TH'),phase:S.phase,action,detail,snapshot:snap()})}
+function resetQuiz(){document.querySelectorAll('input[type=radio]').forEach(x=>x.checked=false);$('quizResult').textContent='';document.querySelectorAll('.selfBtn').forEach(x=>x.classList.remove('on'))}
+function setPreset(i){
+  const oldProfile=S.profile||{name:'',classroom:''};
+  S={preset:i,sc:{...presets[i]},raw:generate(presets[i]),model:null,reveal:false,focus:'all',cleaned:false,split:false,custom:false,history:[],finding:'',profile:oldProfile,quiz:{score:null},self:{data:false,model:false,predict:false},anim:{points:0,training:false,candidate:null,test:null},challenge:{active:false,started:false,completed:false,score:0},moreData:{guess:null,collected:false,retrained:false,before:null,after:null,newCount:0},testCompleted:false,splitPct:80,phase:'learn'};
+  $('finding').value='';resetQuiz();log('เลือกสถานการณ์',presets[i].name);renderAll();animatePoints();speak(`เริ่ม ${presets[i].name} ดู Table แล้วหา Missing หรือ Duplicate ก่อน`)
+}
+function cleanData(){
+  const seen=new Set();let marked=0;
+  S.raw.forEach(r=>{
+    if(r.deleted)return;
+    r.excluded=false;
+    if(!Number.isFinite(r.x)||!Number.isFinite(r.y)){r.issue='missing';r.excluded=true;marked++;return}
+    const k=`${r.x}|${r.y}`;
+    if(seen.has(k)){r.issue='duplicate';r.excluded=true;marked++;return}
+    seen.add(k);
+  });
+  S.cleaned=true;S.split=false;S.model=null;S.reveal=false;S.anim.test=null;
+  log('Clean Data',`ทำเครื่องหมายไม่นำไปใช้ ${marked} แถว (ข้อมูลยังคงอยู่ใน Table)`);
+  updateChallengeScore();renderAll();flashTable();pulse();chime(620);
+  speak(`Clean เสร็จแล้ว ตารางยังเก็บทุกแถวไว้ แต่ทำไฮไลต์ ${marked} แถวว่าไม่นำไป Train ขั้นต่อไป Split`)
+}
+function splitData(){
+  if(!S.cleaned){toast('Clean ก่อน');return}
+  const rows=valid(),q=quality(rows);if(q.block){toast(q.block);return}
+  const pct=Number($('splitRatio')?.value||80);S.splitPct=pct;
+  const sh=[...rows].sort(()=>Math.random()-.5);
+  let tn=Math.round(sh.length*pct/100);tn=Math.max(4,Math.min(sh.length-2,tn));
+  sh.forEach((r,i)=>r.set=i<tn?'train':'test');
+  S.split=true;S.model=null;S.reveal=false;S.anim.test=null;
+  log('Split Data',`${pct}/${100-pct} → Training ${tn} / Test ${sh.length-tn}`);
+  updateChallengeScore();renderAll();flashTable();chime(700);
+  speak(`แบ่งแบบ ${pct} ต่อ ${100-pct} ได้ Training ${tn} จุด และ Test ${sh.length-tn} จุด Test จะถูกซ่อนไว้ก่อนเพื่อไม่ให้ Model เห็น`)
+}
+function candidateModels(best,trainRows){
+  const yr=Math.max(...trainRows.map(r=>r.y))-Math.min(...trainRows.map(r=>r.y))||10;
+  const raw=[
+    {b0:best.b0+yr*.25,b1:best.b1*.45},
+    {b0:best.b0-yr*.18,b1:best.b1*1.5},
+    {b0:best.b0+yr*.12,b1:best.b1*.72},
+    {b0:best.b0-yr*.07,b1:best.b1*1.18}
+  ];
+  raw.forEach(m=>m.score=rmse(trainRows,m));
+  raw.sort((a,b)=>b.score-a.score);
+  best.score=rmse(trainRows,best);
+  return [...raw,best]
+}
+function trainModel(){
+  if(!S.cleaned){toast('Clean ก่อน');return}
+  if(!S.split){$('splitRatio')&&($('splitRatio').value='80');splitData();}
+  const tr=valid().filter(r=>r.set==='train'),te=valid().filter(r=>r.set==='test'),best=lr(tr);if(!best){toast('สร้าง Model ไม่ได้');return}
+  best.trainRmse=rmse(tr,best);best.testRmse=rmse(te,best);S.model=best;S.reveal=false;S.anim.test=null;
+  const candidates=candidateModels(best,tr);let i=0;S.anim.training=true;S.anim.candidate=candidates[0];S.focus='all';
+  $('trainScore').classList.add('show');
+  const showCandidate=()=>{
+    const m=candidates[i];S.anim.candidate=m;
+    $('trainScore').textContent=`ลองเส้น ${i+1}/${candidates.length} • RMSE = ${m.score.toFixed(2)}`;
+    $('overlayNote').textContent=`เส้น ${i+1}: ดูเส้นประแดง ระยะยิ่งมาก = Error มาก`;
+    draw();chime(430+i*65,.05);
+  };
+  showCandidate();
+  const timer=setInterval(()=>{i++;if(i<candidates.length){showCandidate()}else{
+    clearInterval(timer);S.anim.training=false;S.anim.candidate=null;$('trainScore').textContent=`BEST • RMSE ต่ำสุด = ${best.trainRmse.toFixed(2)}`;
+    $('overlayNote').textContent='Best Line: RMSE ต่ำสุด → ความคลาดเคลื่อนรวมของ Training Data ต่ำที่สุด';
+    log('Train Model',`${formula()} | Best Train RMSE ${best.trainRmse.toFixed(2)}`);updateChallengeScore();renderAll();$('trainScore').classList.add('show');pulse();chime(850);
+    speak(`พบ Best Line เพราะมี Training RMSE ต่ำที่สุด เท่ากับ ${best.trainRmse.toFixed(2)} จึงทำให้ความคลาดเคลื่อนรวมจาก Training Data ต่ำกว่าเส้นที่ลองก่อนหน้า`)
+  }},650)
+}
+async function playTestAnimation(){
+  if(!S.model)return;
+  const tests=valid().filter(r=>r.set==='test');if(!tests.length){toast('ไม่มี Test Data');return}
+  S.reveal=true;S.testCompleted=false;S.anim.test={index:0,phase:0};$('testBtn').disabled=true;log('เริ่ม Test Animation',`${tests.length} จุด`);
+  for(let i=0;i<tests.length;i++){
+    const r=tests[i],pred=S.model.b0+S.model.b1*r.x,err=Math.abs(r.y-pred);
+    for(let phase=1;phase<=4;phase++){
+      S.anim.test={index:i,phase,row:r,pred,err};
+      const vals=[`1 x_test<br><b>${r.x}</b>`,`2 ŷ_predict<br><b>${Math.round(pred)}</b>`,`3 y_actual<br><b>${r.y}</b>`,`4 |Error|<br><b>${err.toFixed(1)}</b>`];
+      [...document.querySelectorAll('.flowBox')].forEach((e,j)=>{e.classList.toggle('on',j<phase);e.innerHTML=j<phase?vals[j]:['1 x_test','2 ŷ_predict','3 y_actual','4 |Error|'][j]});
+      const messages=[
+        `จุด Test ${i+1}/${tests.length}: รับเฉพาะ x_test = ${r.x} เข้า Model`,
+        `Model คำนวณค่าทำนาย ŷ_predict = ${Math.round(pred)} โดยยังไม่ดู y จริง`,
+        `จากนั้นจึงเปิดค่าจริง y_actual = ${r.y} เพื่อเปรียบเทียบ`,
+        `ความคลาดเคลื่อนของจุดนี้ = |${r.y} − ${Math.round(pred)}| = ${err.toFixed(1)}`
+      ];
+      $('testDetail').textContent=messages[phase-1];$('overlayNote').textContent=messages[phase-1];
+      draw();chime(600+phase*70,.05);await wait(750);
+    }
+    await wait(300);
+  }
+  S.anim.test=null;S.testCompleted=true;log('เปิด Test Data',`Test RMSE ${S.model.testRmse.toFixed(2)}`);updateChallengeScore();renderAll();
+  $('testDetail').textContent=`สรุป: ความคลาดเคลื่อนรวม (RMSE) = ${S.model.testRmse.toFixed(2)} • ยิ่งต่ำยิ่งแปลว่า Model ทำนายข้อมูลใหม่ได้ใกล้ค่าจริงโดยรวม • ${S.sc.impact||''}`;
+  $('overlayNote').textContent=`✓ Step 5 Completed • Test RMSE = ${S.model.testRmse.toFixed(2)} • Test Data ไม่เคยถูกใช้สร้างเส้น Model`;
+  $('testBtn').disabled=false;chime(920);speak(`Test เสร็จแล้ว Test RMSE เท่ากับ ${S.model.testRmse.toFixed(2)} ยิ่งต่ำยิ่งแปลว่าค่าทำนายของข้อมูลใหม่ใกล้ค่าจริงโดยรวม`)
+}
+function wait(ms){return new Promise(r=>setTimeout(r,ms))}
+function formula(){if(!S.model)return'ยังไม่ได้ Train';const s=S.model.b1>=0?'+':'−';return`ŷ = ${S.model.b0.toFixed(2)} ${s} ${Math.abs(S.model.b1).toFixed(2)}x`}
+function meaning(){
+  if(!S.model)return'ตอน Train จะเห็นเส้นหลายเส้น พร้อมระยะ Error ของแต่ละจุด และ RMSE ที่เปลี่ยนไป จนพบเส้นที่มี RMSE ต่ำที่สุด';
+  const step=niceStep(S.sc.xmax-S.sc.xmin,6),d=Math.abs(S.model.b1*step),dir=S.model.b1>=0?'เพิ่มขึ้น':'ลดลง';
+  return`Best Line ถูกเลือกเพราะ Train RMSE ต่ำสุด (${S.model.trainRmse.toFixed(2)}) • เมื่อ ${S.sc.x} เพิ่ม ${step} หน่วย Model คาดว่า ${S.sc.y} มีแนวโน้ม${dir}ประมาณ ${d.toFixed(1)} หน่วย`
+}
+function nextState(){
+  if(S.phase==='challenge'){
+    if(!S.cleaned)return{step:1,task:'Challenge: Clean Data',why:'ใช้ความรู้เดิมกับ Dataset ใหม่'};
+    if(!S.model)return{step:2,task:'Challenge: Train Model',why:'ระบบแบ่ง Training/Test ให้อัตโนมัติ'};
+    if(!S.testCompleted)return{step:4,task:'Challenge: Test Model',why:'ตรวจ Model กับข้อมูลใหม่'};
+    return{step:5,task:'Challenge เสร็จแล้ว ✓',why:'บันทึก JSON และเขียนสิ่งที่ค้นพบได้'};
+  }
+  if(!S.cleaned)return{step:1,task:'② Clean Data',why:'มองหา Missing / Duplicate ก่อนกด'};
+  if(!S.model)return{step:2,task:'③ Train Model',why:'ระบบจะ Split 80/20 ให้อัตโนมัติ แล้วให้ AI หา Best Line'};
+  if(!S.testCompleted)return{step:3,task:'④ Predict แล้วไป Test',why:'ลองขยับ x ดูค่าที่ Model ทำนาย แล้วเล่น Test Animation'};
+  return{step:5,task:'✓ Core Complete',why:'คุณผ่าน 5 ขั้นหลักแล้ว ลอง Experiment +5 หรือทำแบบฝึกหัดใหม่ได้'};
+}
+function status(){
+  const s=nextState();
+  document.querySelectorAll('.timeline .step').forEach((e,i)=>{
+    e.classList.remove('active','done','pending');
+    if(s.step>=5 || i<s.step)e.classList.add('done');
+    else if(i===s.step)e.classList.add('active');
+    else e.classList.add('pending');
+  });
+  $('nextTask').textContent=s.task;$('nextWhy').textContent=s.why;autoCheck();
+  ['box2','box3','box4','box5'].forEach((id,j)=>{const e=$(id);if(e)e.classList.toggle('activeBox',s.step===j+1)});
+  renderMoreData();renderCoreCompleteV10();
+}
+function autoCheck(){
+  let c='warn',t='';
+  if(S.phase==='challenge'){
+    if(!S.cleaned){
+      t='แบบฝึกหัดใหม่: เริ่มจาก Clean';
+    }else if(!S.model){
+      c='ok';t='✓ Clean แล้ว — Train Model';
+    }else if(!S.testCompleted){
+      c='ok';t='✓ มี Model แล้ว — ลอง Prediction แล้ว Test';
+    }else{
+      c='ok';t='✓ Challenge เสร็จแล้ว';
+    }
+  }else if(!S.cleaned){
+    t='Step 2: มองหาแถวที่ผิด/ซ้ำ แล้ว Clean';
+  }else if(!S.model){
+    c='ok';t='✓ Clean แล้ว — ให้ AI Train Model';
+  }else if(!S.testCompleted){
+    c='ok';t='✓ มี Model แล้ว — ลอง Prediction และ Test';
+  }else{
+    c='ok';t='✓ Core Complete — คุณเข้าใจวงจร Data → Model → Prediction → Test แล้ว';
+  }
+  $('conceptMsg').className='feedback '+c;
+  $('conceptMsg').textContent=t;
+}
+function updateChallengeScore(){
+  if(!S.challenge.started){S.challenge.score=0;renderChallenge();updateScoresV9();return}
+  let score=0;
+  if(S.cleaned)score++;
+  if(S.split)score++;
+  if(S.model)score++;
+  if(S.reveal)score++;
+  if(S.reveal&&S.model&&S.cleaned&&S.split)score++; // Transfer completion
+  S.challenge.score=Math.min(5,score);
+  S.challenge.completed=S.challenge.score>=5;
+  renderChallenge();updateScoresV9()
+}
+function renderChallenge(){
+  if($('challengeScore'))$('challengeScore').textContent=S.challenge.completed?'PASS':'—';
+  if(!$('challengeStatus'))return;
+  if(!S.challenge.started){
+    $('challengeStatus').textContent='ทำ Core 5 ขั้นให้ครบก่อน แล้วลอง Dataset ใหม่เพื่อยืนยันว่าเข้าใจจริง';
+  }else if(S.challenge.completed){
+    $('challengeStatus').textContent='✓ Transfer Challenge ผ่าน — คุณทำ Core กับ Dataset ใหม่ครบแล้ว';
+  }else{
+    $('challengeStatus').textContent='Transfer Challenge กำลังทำ — ใช้ความรู้เดิมกับ Dataset ใหม่ให้ครบ Clean → Train → Predict → Test';
+  }
+}
+let generatedPreview=null;
+function populateGeneratePlanner(){
+  const sel=$('genScenario');sel.innerHTML=presets.map((p,i)=>`<option value="${i}">${p.icon} ${p.name}</option>`).join('');
+  sel.value=String(Math.max(0,S.preset||0));syncGenerateRange();
+}
+function syncGenerateRange(){const sc=presets[Number($('genScenario').value)||0];$('genXmin').value=Math.max(0,Math.round(sc.xmin));$('genXmax').value=Math.round(sc.xmax);generatedPreview=null;$('useGenerated').disabled=true;$('genPreviewBody').innerHTML='';$('genStats').innerHTML='';$('genAdvice').className='feedback warn';$('genAdvice').textContent='กำหนดจำนวนข้อมูลและช่วง x แล้วกด Generate Preview'}
+function previewGeneratedChallenge(){
+  const idx=Number($('genScenario').value),base=presets[idx],n=Number($('genCount').value),xmin=Math.round(Number($('genXmin').value)),xmax=Math.round(Number($('genXmax').value));
+  const f=$('genAdvice');
+  if(!Number.isFinite(xmin)||!Number.isFinite(xmax)||xmin<0||xmax<=xmin){f.className='feedback bad';f.textContent='ช่วง x ไม่ถูกต้อง: ต้องเป็นจำนวนเต็ม ≥ 0 และ x สูงสุด > x ต่ำสุด';$('useGenerated').disabled=true;return}
+  const span=xmax-xmin;if(span<Math.max(4,n-2)){f.className='feedback bad';f.textContent='ช่วง x แคบเกินไปเมื่อเทียบกับจำนวนข้อมูล — ขยายช่วง x เพื่อลดการกระจุก';$('useGenerated').disabled=true;return}
+  const sc={...base,xmin,xmax};
+  const rows=[];const used=new Set();
+  for(let i=0;i<n;i++){
+    let x=Math.round(xmin+(xmax-xmin)*i/Math.max(1,n-1));let tries=0;while(used.has(x)&&tries<20){x=Math.min(xmax,x+1);tries++}used.add(x);
+    let y=Math.round(base.intercept+base.slope*x+randn()*base.noise);y=Math.max(0,Math.min(Math.max(base.ymax,Math.round(base.intercept+base.slope*xmax+3*base.noise)),y));
+    rows.push({x,y,issue:null,set:null,deleted:false,excluded:false});
+  }
+  // เพิ่มจุดฝึกตรวจข้อมูล 2 จุด โดยยังอยู่ในกรอบ x ที่วางแผนไว้
+  rows.push({...rows[Math.min(2,rows.length-1)],issue:'duplicate',excluded:false});
+  rows.push({x:Math.round((xmin+xmax)/2),y:null,issue:'missing',set:null,deleted:false,excluded:false});
+  const cleanRows=rows.filter(r=>!r.issue&&Number.isFinite(r.y)),q=quality(cleanRows);
+  generatedPreview={idx,sc,rows,q,n,xmin,xmax};
+  $('genPreviewBody').innerHTML=rows.map((r,i)=>`<tr><td>${i+1}</td><td>${r.x}</td><td>${Number.isFinite(r.y)?r.y:'–'}</td><td>${r.issue||'พร้อมใช้'}</td></tr>`).join('');
+  $('genStats').innerHTML=`<div class="plannerStat"><b>${n}</b><span>ข้อมูลหลัก</span></div><div class="plannerStat"><b>${xmin}–${xmax}</b><span>ช่วง x</span></div><div class="plannerStat"><b>${q.ux}</b><span>x ที่ต่างกัน</span></div><div class="plannerStat"><b>${q.r.toFixed(2)}</b><span>แนวโน้ม r</span></div>`;
+  const warnings=[];if(xmin<base.xmin||xmax>base.xmax)warnings.push(`ช่วง x ต่างจากช่วงตัวอย่างเดิม (${base.xmin}–${base.xmax}) — ใช้ได้ถ้ามีเหตุผลจากการเก็บข้อมูลจริง`);warnings.push(...q.w);
+  f.className='feedback '+(warnings.length?'warn':'ok');f.textContent=warnings.length?'Preview ผ่าน แต่ควรคิดต่อ: '+warnings.join(' • '):'Preview พร้อม: ช่วง x กระจายดีและจำนวนข้อมูลเหมาะสม';$('useGenerated').disabled=false
+}
+function useGeneratedChallenge(){
+  if(!generatedPreview)return;const g=generatedPreview,sc={...g.sc};
+  S.sc=sc;S.preset=g.idx;S.raw=g.rows;S.model=null;S.reveal=false;S.cleaned=false;S.split=false;S.custom=false;S.phase='challenge';S.challenge={active:true,started:true,completed:false,score:0};S.anim={points:0,training:false,candidate:null,test:null};S.splitPct=80;S.testCompleted=false;
+  log('เริ่ม New Data Challenge',`${sc.name} • วางแผน x=${g.xmin}–${g.xmax} • ${g.n} จุด + จุดตรวจคุณภาพ`);$('generateModal').classList.remove('show');renderAll();animatePoints();speak('เริ่ม Challenge จากแผนเก็บข้อมูลที่ตรวจแล้ว ขั้นต่อไปดู Table และ Clean')
+}
+function startGeneratedChallenge(){if(!S.testCompleted){toast('ทำ Core 5 ขั้นให้ครบก่อน');return}populateGeneratePlanner();$('generateModal').classList.add('show')}
+
+function setMoreGuess(v){
+  if(!S.testCompleted||S.phase==='challenge'){toast('ทำ Core 5 ขั้นให้ครบก่อน');return}
+  S.moreData=S.moreData||{guess:null,collected:false,retrained:false,before:null,after:null,newCount:0};
+  S.moreData.guess=v;log('ทายก่อนเพิ่มข้อมูล',`Model จะเปลี่ยน: ${v}`);
+  renderMoreData()
+}
+function generateFiveTrainingPoints(){
+  const train=valid().filter(r=>r.set==='train'),m=S.model||lr(train);
+  const xs=train.map(r=>r.x),ys=train.map(r=>r.y),xmin=Math.max(0,Math.min(...xs)),xmax=Math.max(...xs);
+  const span=Math.max(5,xmax-xmin),noise=Math.max(1,rmse(train,m)||((Math.max(...ys)-Math.min(...ys))*0.06)||1);
+  const existing=new Set(valid().map(r=>r.x)),pts=[];
+  for(let i=1;i<=5;i++){
+    let x=Math.round(xmin+(span*i/6));let tries=0;
+    while(existing.has(x)&&tries<25){x=Math.min(xmax,Math.max(xmin,x+(tries%2?1:-1)*(1+Math.floor(tries/2))));tries++}
+    existing.add(x);
+    let y=Math.max(0,Math.round(m.b0+m.b1*x+randn()*noise));
+    pts.push({x,y,issue:null,set:'train',deleted:false,excluded:false,added:true})
+  }
+  return pts
+}
+function collectMoreFive(){
+  if(S.phase==='challenge'||!S.testCompleted){toast('รอให้ Step 5 Completed ก่อน');return}
+  if(!S.moreData?.guess){toast('ทายก่อนว่า Model จะเปลี่ยนอย่างไร');return}
+  if(S.moreData.collected){toast('เพิ่มข้อมูลแล้ว ให้ Train ใหม่');return}
+  S.moreData.before={
+    model:{...S.model},formula:formula(),
+    train:S.model.trainRmse,test:S.model.testRmse,
+    testIds:valid().filter(r=>r.set==='test').map(r=>`${r.x}|${r.y}`)
+  };
+  const pts=generateFiveTrainingPoints();S.raw.push(...pts);
+  S.moreData.collected=true;S.moreData.newCount=pts.length;S.moreData.retrained=false;
+  log('Collect More Data',`เพิ่ม Training Data ${pts.length} จุด • Test Data เดิมล็อกไว้`);
+  renderAll();flashTable();animateNewPoints();chime(740);
+  speak('เพิ่ม Training Data อีกห้าจุดแล้ว Test Data เดิมยังคงเดิมและไม่ถูกเปลี่ยน ขั้นต่อไป Train ใหม่เพื่อดูว่า Model เปลี่ยนไหม')
+}
+function retrainWithMore(){
+  if(!S.moreData?.collected){toast('เพิ่มข้อมูล +5 ก่อน');return}
+  const tr=valid().filter(r=>r.set==='train'),te=valid().filter(r=>r.set==='test'),m=lr(tr);if(!m)return;
+  m.trainRmse=rmse(tr,m);m.testRmse=rmse(te,m);
+  S.model=m;S.reveal=true;S.moreData.retrained=true;
+  S.moreData.after={model:{...m},formula:formula(),train:m.trainRmse,test:m.testRmse};
+  log('Train ใหม่หลังเพิ่มข้อมูล',`${formula()} • Test RMSE ${m.testRmse.toFixed(2)}`);
+  renderAll();pulse();chime(900);
+  const d=(S.moreData.after.test-S.moreData.before.test);
+  speak(`Train ใหม่แล้ว Test Error ${d<0?'ลดลง':'เปลี่ยนจากเดิม'} จาก ${S.moreData.before.test.toFixed(2)} เป็น ${S.moreData.after.test.toFixed(2)} ให้สังเกตเส้น Model เดิมแบบเส้นประและ Model ใหม่`)
+}
+function renderMoreData(){
+  if(!$('collect5Btn'))return;
+  S.moreData=S.moreData||{guess:null,collected:false,retrained:false,before:null,after:null,newCount:0};
+  document.querySelectorAll('[data-moreguess]').forEach(b=>b.classList.toggle('on',b.dataset.moreguess===S.moreData.guess));
+  $('collect5Btn').disabled=!(S.phase!=='challenge'&&S.testCompleted&&S.moreData.guess&&!S.moreData.collected);
+  $('retrainBtn').disabled=!S.moreData.collected||S.moreData.retrained;
+  if(!S.testCompleted&&S.phase!=='challenge')$('moreNote').textContent='ทำ Core 5 ขั้นให้ครบก่อน แล้วค่อยลอง Experiment นี้';
+  else if(!S.moreData.guess)$('moreNote').textContent='① ทายก่อนว่า Model จะเปลี่ยนมากหรือน้อย';
+  else if(!S.moreData.collected)$('moreNote').textContent='② กด “เก็บเพิ่ม +5” — ระบบจะเพิ่มเฉพาะ Training Data และล็อก Test เดิม 🔒';
+  else if(!S.moreData.retrained)$('moreNote').textContent='③ จุดใหม่สีฟ้าเพิ่มแล้ว — กด “Train ใหม่”';
+  else{
+    const b=S.moreData.before,a=S.moreData.after,delta=a.test-b.test;
+    $('moreNote').textContent=`④ เปรียบเทียบเสร็จ: Test Error ${delta<0?'ลดลง':'เพิ่มขึ้น'} ${Math.abs(delta).toFixed(2)} • ข้อมูลมากขึ้นไม่ได้แปลว่าดีขึ้นเสมอ ต้องดูคุณภาพข้อมูลด้วย`;
+  }
+  if(S.moreData.before){
+    $('moreCompare').style.display='grid';
+    $('beforeModelText').textContent=S.moreData.before.formula;
+    $('beforeTestText').textContent=S.moreData.before.test.toFixed(2);
+    $('afterModelText').textContent=S.moreData.after?.formula||'รอ Train ใหม่';
+    $('afterTestText').textContent=S.moreData.after?S.moreData.after.test.toFixed(2):'–';
+  }else $('moreCompare').style.display='none';
+}
+function animateNewPoints(){
+  const added=valid().filter(r=>r.added);let i=0;
+  const timer=setInterval(()=>{if(i>=added.length){clearInterval(timer);return}pulse();chime(600+i*45,.04);i++},180)
+}
+
+function coreProgressV9(){
+  if(S.phase==='challenge') return 5;
+  let n=1;
+  if(S.cleaned)n++;
+  if(S.model)n++;
+  if(S.model)n++; // Predict step becomes available once model exists
+  if(S.testCompleted)n++;
+  return Math.min(5,n);
+}
+function comparePointV9(){
+  return $('finding')&&$('finding').value.trim()?1:0;
+}
+function masteryV9(){
+  return Math.max(0,Math.min(10,S.quiz?.score||0));
+}
+function updateScoresV9(){
+  const core=coreProgressV9(),mastery=masteryV9();
+  if($('coreProgress'))$('coreProgress').textContent=`${core}/5 ขั้น`;
+  if($('coreBar'))$('coreBar').style.width=`${core/5*100}%`;
+  if($('masteryScoreV9'))$('masteryScoreV9').textContent=`${mastery}/10`;
+  if($('masteryBar'))$('masteryBar').style.width=`${mastery/10*100}%`;
+}
+
+
+
+function renderTeacherReady(){
+  if(!$('teacherReadyText'))return;
+  const missing=[];
+  if(!S.testCompleted)missing.push('Core 5 ขั้น');
+  if(!Number.isFinite(S.quiz?.score))missing.push('Understanding Check');
+  if(!S.challenge?.completed)missing.push('Transfer Challenge');
+  if(!$('finding').value.trim())missing.push('Reflection');
+  if(missing.length){
+    $('teacherReadyBox').classList.remove('coreComplete');
+    $('teacherReadyText').textContent='ยังขาด: '+missing.join(' • ');
+  }else{
+    $('teacherReadyBox').classList.add('coreComplete');
+    $('teacherReadyText').textContent=`✓ พร้อมส่งครู — Understanding ${masteryV9()}/10 • Transfer PASS • มี Learning Trace`;
+  }
+}
+
+function renderCoreCompleteV10(){
+  const done=Boolean(S.testCompleted&&S.phase!=='challenge');
+  if($('coreCompleteText'))$('coreCompleteText').textContent=done
+    ?'🎉 เยี่ยม! คุณทำ Core 5 ขั้นครบแล้ว — ตอนนี้เลือก “ทดลอง +5 Data” หรือ “แบบฝึกหัดใหม่” ได้'
+    :'ทำ Core 5 ขั้นก่อน แล้วกิจกรรมต่อยอดจะเปิด';
+  if($('coreCompleteBox'))$('coreCompleteBox').classList.toggle('coreComplete',done);
+  if($('experimentBox'))$('experimentBox').style.opacity=done?'1':'.45';
+  if($('newChallengeBox'))$('newChallengeBox').style.opacity=done?'1':'.45';
+}
+
+function renderScenarios(){
+  const box=$('scenarioList');box.innerHTML='';
+  presets.forEach((s,i)=>{const b=document.createElement('button');b.className='scenario'+(!S.custom&&S.preset===i?' active':'');b.innerHTML=`<div class="ico">${s.icon}</div><div class="nm">${s.name}</div>`;b.onclick=()=>setPreset(i);box.appendChild(b)});
+  const c=document.createElement('button');c.className='scenario custom'+(S.custom?' active':'');c.innerHTML='<div class="ico">✏️</div><div class="nm">My Own Dataset</div>';c.onclick=()=>{customMode='own';$('customModalTitle').textContent='My Own Dataset';$('customModal').classList.add('show')};box.appendChild(c)
+}
+function residual(r){if(!S.model||!Number.isFinite(r.y))return null;return Math.abs(r.y-(S.model.b0+S.model.b1*r.x))}
+function predVal(r){if(!S.model||!Number.isFinite(r.x))return null;return S.model.b0+S.model.b1*r.x}
+function renderTable(){
+  $('xh').textContent=S.sc.x;$('yh').textContent=S.sc.y;const rows=S.raw.filter(r=>!r.deleted);$('rowCount').textContent=`${rows.length} แถว • ใช้ ${valid().length}`;
+  $('tbody').innerHTML=rows.map((r,i)=>`<tr class="${r.excluded?'excludedRow':''}"><td>${i+1}</td><td>${Number.isFinite(r.x)?Math.round(r.x):'–'}</td><td>${Number.isFinite(r.y)?Math.round(r.y):'–'}</td><td>${issueTag(r)}</td><td>${setTag(r)}</td><td>${predVal(r)!==null&&!r.excluded?Math.round(predVal(r)):'–'}</td><td>${!r.excluded&&residual(r)!=null?residual(r).toFixed(1):'–'}</td></tr>`).join('')
+}
+function issueTag(r){
+  if(r.excluded&&r.issue==='missing')return'<span class="tag issue">Missing</span> <span class="tag excludedTag">ไม่นำไปใช้</span>';
+  if(r.excluded&&r.issue==='duplicate')return'<span class="tag issue">Duplicate</span> <span class="tag excludedTag">ไม่นำไปใช้</span>';
+  if(r.issue==='missing')return'<span class="tag issue">Missing • รอ Clean</span>';
+  if(r.issue==='duplicate')return'<span class="tag issue">Duplicate • รอ Clean</span>';
+  return'<span class="tag clean">พร้อมใช้</span>'
+}
+function setTag(r){if(r.excluded)return'<span class="tag excludedTag">Excluded</span>';if(r.set==='train')return'<span class="tag train">Training</span>';if(r.set==='test')return'<span class="tag test">Test</span>';return'–'}
+function renderStats(){
+  const tr=valid().filter(r=>r.set==='train'),te=valid().filter(r=>r.set==='test'),q=quality(valid());
+  $('datasetN').textContent=S.raw.filter(r=>!r.deleted).length;$('splitN').textContent=S.split?`${tr.length} / ${te.length}`:'–';
+  $('trainErr').textContent=S.model?S.model.trainRmse.toFixed(2):'–';$('testErr').textContent=S.model&&S.reveal?S.model.testRmse.toFixed(2):'–';
+  $('formula').textContent=formula();$('meaning').textContent=meaning();$('testBtn').disabled=!S.model;
+  $('readyN').textContent=valid().length;$('issueN').textContent=S.raw.filter(r=>!r.deleted&&r.issue).length;$('corrN').textContent=isFinite(q.r)?q.r.toFixed(2):'–';if($('splitRatio'))$('splitRatio').value=String(S.splitPct||80)
+}
+function renderPrediction(){
+  const p=$('predictX'),sc=S.sc;p.min=Math.max(0,Math.ceil(sc.xmin));p.max=Math.max(p.min+1,Math.floor(sc.xmax));p.step=1;
+  if(!p.value||+p.value<p.min||+p.value>p.max)p.value=Math.round((+p.min + +p.max)/2);
+  $('predictLabel').textContent=sc.x;
+  if(S.model){const x=Math.round(+p.value),y=S.model.b0+S.model.b1*x;$('predictY').textContent=Math.round(y);$('predictSentence').textContent=`x = ${x} → ŷ_predict ≈ ${Math.round(y)}`}
+  else{$('predictY').textContent='–';$('predictSentence').textContent='Train ก่อน จึงจะ Prediction ได้'}
+}
+function updateScene(){
+  const e=$('sceneAnim'),p=S.sc;e.textContent=p.anim||p.icon||'📊';e.className='sceneAnim '+(p.animClass||'float')
+}
+function renderAll(){
+  renderScenarios();$('title').textContent=`${S.sc.icon} ${S.sc.name}`;$('mission').textContent=S.sc.mission;$('lifeUse').textContent=S.sc.life||'ลองคิดว่าข้อมูลนี้ช่วยตัดสินใจอะไรในชีวิตประจำวันได้บ้าง';$('axisText').textContent=`x = ${S.sc.x} • y = ${S.sc.y}`;
+  renderStats();renderPrediction();renderTable();status();renderChallenge();renderMoreData();updateScoresV9();renderTeacherReady();updateScene();draw()
+}
+function scale(){
+  const rows=numericRows(),mx=rows.length?Math.max(...rows.map(r=>r.x)):S.sc.xmax,my=rows.length?Math.max(...rows.map(r=>r.y)):S.sc.ymax;
+  const xb=axisBounds0(Math.max(mx,S.sc.xmax)),yb=axisBounds0(Math.max(my,S.sc.ymax)),p={l:54,r:18,t:18,b:38},w=canvas.clientWidth,h=canvas.clientHeight;
+  return{w,h,p,xb,yb,x:v=>p.l+(v-xb.lo)/(xb.hi-xb.lo)*(w-p.l-p.r),y:v=>h-p.b-(v-yb.lo)/(yb.hi-yb.lo)*(h-p.t-p.b)}
+}
+function drawLine(m,z,color,width=2,dash=[]){if(!m)return;ctx.save();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);ctx.beginPath();ctx.moveTo(z.x(0),z.y(m.b0));ctx.lineTo(z.x(z.xb.hi),z.y(m.b0+m.b1*z.xb.hi));ctx.stroke();ctx.restore()}
+function drawResiduals(rows,m,z,color='rgba(217,86,99,.78)'){
+  if(!m)return;ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle=color;ctx.lineWidth=1;
+  rows.forEach(r=>{const yh=m.b0+m.b1*r.x;ctx.beginPath();ctx.moveTo(z.x(r.x),z.y(r.y));ctx.lineTo(z.x(r.x),z.y(yh));ctx.stroke()});ctx.restore()
+}
+function pointLabel(r,z,color='#596273'){ctx.save();ctx.font='7px Segoe UI';ctx.fillStyle=color;ctx.fillText(`(${Math.round(r.x)},${Math.round(r.y)})`,z.x(r.x)+5,z.y(r.y)-5);ctx.restore()}
+function draw(){
+  if(!S.sc)return;const z=scale(),{w,h,p}=z;ctx.clearRect(0,0,w,h);ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.font='8px Segoe UI';ctx.fillStyle='#667085';ctx.strokeStyle='#e8edf3';ctx.lineWidth=1;
+  for(let x=0;x<=z.xb.hi+.001;x+=z.xb.step){const px=z.x(x);ctx.beginPath();ctx.moveTo(px,p.t);ctx.lineTo(px,h-p.b);ctx.stroke();ctx.fillText(Math.round(x),px-5,h-p.b+13)}
+  for(let y=0;y<=z.yb.hi+.001;y+=z.yb.step){const py=z.y(y);ctx.beginPath();ctx.moveTo(p.l,py);ctx.lineTo(w-p.r,py);ctx.stroke();ctx.fillText(Math.round(y),4,py+3)}
+  ctx.strokeStyle='#445065';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(p.l,p.t);ctx.lineTo(p.l,h-p.b);ctx.lineTo(w-p.r,h-p.b);ctx.stroke();
+  ctx.fillStyle='#344054';ctx.font='bold 8px Segoe UI';ctx.fillText('(0,0)',p.l-5,h-p.b+13);
+
+  const rows=valid(),showN=S.anim?.points??rows.length,current=S.anim?.training?S.anim.candidate:S.model;
+  if(S.anim?.training&&current){drawResiduals(rows.filter(r=>r.set==='train'),current,z,'rgba(217,86,99,.72)');drawLine(current,z,'#9b8ce6',2)}
+  else if(S.model){if(S.moreData?.retrained&&S.moreData?.before?.model)drawLine(S.moreData.before.model,z,'#9aa6b7',2,[6,5]);drawLine(S.model,z,'#755fd7',3);if(S.focus==='all'||S.focus==='error'||S.focus==='model')drawResiduals(rows.filter(r=>r.set==='train'||(S.reveal&&r.set==='test')),S.model,z)}
+
+  rows.slice(0,showN).forEach(r=>{
+    if(r.set==='test'&&!S.reveal)return;
+    ctx.beginPath();ctx.arc(z.x(r.x),z.y(r.y),r.set==='test'?6:(r.added?6:5),0,Math.PI*2);ctx.fillStyle=r.set==='test'?'#f09c42':(r.added?'#24a9b8':'#3678e5');ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();if(!S.anim?.test)pointLabel(r,z,r.set==='test'?'#a15d0b':'#526075')
+  });
+
+  if(S.anim?.test){
+    const a=S.anim.test,r=a.row,pred=a.pred,phase=a.phase;
+    const xp=z.x(r.x),yp=z.y(pred),ya=z.y(r.y);
+    ctx.save();ctx.lineWidth=2;
+    if(phase>=1){ctx.setLineDash([4,3]);ctx.strokeStyle='#24a9b8';ctx.beginPath();ctx.moveTo(xp,h-p.b);ctx.lineTo(xp,yp);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#147884';ctx.font='bold 8px Segoe UI'}
+    if(phase>=2){ctx.beginPath();ctx.arc(xp,yp,7,0,Math.PI*2);ctx.fillStyle='#2aa36b';ctx.fill();ctx.fillStyle='#1f744c'}
+    if(phase>=3){ctx.beginPath();ctx.arc(xp,ya,7,0,Math.PI*2);ctx.fillStyle='#f09c42';ctx.fill();ctx.fillStyle='#9a5b00'}
+    if(phase>=4){ctx.strokeStyle='#d95663';ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(xp,yp);ctx.lineTo(xp,ya);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#b33b49'}
+    ctx.restore()
+  }
+
+  if(S.model&&(S.focus==='all'||S.focus==='prediction')&&!S.anim?.test){
+    const x=Math.round(+$('predictX').value),y=S.model.b0+S.model.b1*x;ctx.save();ctx.setLineDash([4,3]);ctx.strokeStyle='#2aa36b';ctx.beginPath();ctx.moveTo(z.x(x),h-p.b);ctx.lineTo(z.x(x),z.y(y));ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.arc(z.x(x),z.y(y),6,0,Math.PI*2);ctx.fillStyle='#2aa36b';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.restore()
+  }
+}
+function animatePoints(){S.anim.points=0;const n=valid().length;let i=0;const timer=setInterval(()=>{i++;S.anim.points=i;draw();if(i>=n){clearInterval(timer);S.anim.points=n}},100)}
+function flashTable(){[...$('tbody').rows].forEach((r,i)=>setTimeout(()=>{r.classList.add('flashRow');setTimeout(()=>r.classList.remove('flashRow'),800)},i*35))}
+function resize(){const r=canvas.getBoundingClientRect();canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);draw()}
+
+/* quiz / self */
+$('checkQuiz').onclick=()=>{
+  const ans={
+    q1:document.querySelector('input[name=q1]:checked')?.value,
+    q2:document.querySelector('input[name=q2]:checked')?.value,
+    q3:document.querySelector('input[name=q3]:checked')?.value,
+    q4:document.querySelector('input[name=q4]:checked')?.value,
+    q5:document.querySelector('input[name=q5]:checked')?.value
+  };
+  const correct={q1:'b',q2:'a',q3:'a',q4:'a',q5:'b'};
+  const labels={q1:'Data/Clean',q2:'Train/Model',q3:'Prediction',q4:'Test/Error',q5:'Application'};
+  let total=0; const detail={};
+  Object.keys(correct).forEach(k=>{
+    const ok=ans[k]===correct[k];
+    detail[k]={label:labels[k],answer:ans[k]||null,correct:ok,score:ok?2:0};
+    total+=ok?2:0;
+  });
+  S.quiz={score:total,detail,answers:ans};
+  log('Understanding Check',`${total}/10`);
+  $('quizResult').textContent=` ${total}/10 ${total>=8?'✓ เข้าใจดี':'→ ดูหัวข้อที่ยังพลาด แล้วลองใหม่ได้'}`;
+  $('scoreBreak').innerHTML=Object.values(detail).map(d=>`<div class="scorePart"><b>${d.score}/2</b><span>${d.label}</span></div>`).join('');
+  updateScoresV9();status();
+  if(total===10){chime(940);speak('ยอดเยี่ยม คุณตอบได้ครบทั้งห้าด้าน')}
+};
+document.querySelectorAll('[data-self]').forEach(b=>b.onclick=()=>{const k=b.dataset.self;S.self[k]=!S.self[k];b.classList.toggle('on',S.self[k]);log('Self Assessment',`${k}: ${S.self[k]?'มั่นใจ':'ยังไม่มั่นใจ'}`)});
+
+/* custom / own challenge */
+function parseCustom(){return $('customPairs').value.split(/\n+/).map(s=>s.trim()).filter(Boolean).map(s=>s.split(',').map(Number)).filter(p=>p.length===2&&p.every(Number.isFinite))}
+function checkCustom(){
+  const pairs=parseCustom(),rows=pairs.map(p=>({x:p[0],y:p[1]})),q=quality(rows),badNeg=pairs.some(p=>p[0]<0||p[1]<0),decimalX=pairs.some(p=>!Number.isInteger(p[0]));
+  lastCustom={pairs,q};const f=$('customFeedback');
+  if(badNeg){f.className='feedback bad';f.textContent='กิจกรรมนี้ใช้กราฟเริ่ม 0,0 จึงกำหนด x และ y ไม่ติดลบ';$('useCustom').disabled=true;return}
+  if(decimalX){f.className='feedback bad';f.textContent='ค่า x ควรเป็นจำนวนเต็ม เพื่ออ่านกราฟง่ายสำหรับ ม.1';$('useCustom').disabled=true;return}
+  if(q.block){f.className='feedback bad';f.textContent='ยังไม่พร้อม: '+q.block;$('useCustom').disabled=true}
+  else{f.className='feedback '+(q.w.length?'warn':'ok');f.textContent=(q.w.length?'ใช้ได้ แต่แนะนำ: '+q.w.join(' • '):'Dataset พร้อมใช้งาน')+` | ${q.n} จุด | r≈${q.r.toFixed(2)}`;$('useCustom').disabled=false}
+}
+function useCustom(){
+  if(!lastCustom||lastCustom.q.block)return;
+  const name=$('customTitle').value.trim(),mission=$('customMission').value.trim(),x=$('customX').value.trim(),y=$('customY').value.trim();if(!name||!mission||!x||!y){toast('กรอกหัวข้อให้ครบ');return}
+  const pairs=lastCustom.pairs,xs=pairs.map(p=>p[0]),ys=pairs.map(p=>p[1]),profile=S.profile||{name:'',classroom:''},history=S.history||[],isChallenge=customMode==='challenge';
+  S.sc={icon:'✏️',anim:'✏️📊',animClass:'float',name,x,y,xmin:Math.min(...xs),xmax:Math.max(...xs),ymin:0,ymax:Math.max(...ys),mission,slope:0,intercept:0,noise:1};
+  S.raw=pairs.map(p=>({x:p[0],y:Math.round(p[1]),issue:null,set:null,deleted:false,excluded:false}));S.model=null;S.reveal=false;S.cleaned=false;S.split=false;S.custom=true;S.anim={points:0,training:false,candidate:null,test:null};S.profile=profile;S.history=history;S.testCompleted=false;
+  if(isChallenge){S.phase='challenge';S.challenge={active:true,started:true,completed:false,score:0};log('เริ่ม New Data Challenge','Dataset ที่ผู้เรียนใส่เองและผ่าน Data Check')}
+  else{S.phase='learn';S.challenge={active:false,started:false,completed:false,score:0};log('สร้าง My Own Dataset','ผ่าน Data Check')}
+  $('customModal').classList.remove('show');renderAll();animatePoints();speak('Dataset ผ่านการตรวจแล้ว ขั้นต่อไป Clean แล้ว Split Train Test ตามลำดับ')
+}
+$('exampleCustom').onclick=()=>{$('customTitle').value='การเดินของฉัน';$('customMission').value='เวลาเดินสัมพันธ์กับจำนวนก้าวอย่างไร?';$('customX').value='เวลาเดิน (นาที)';$('customY').value='จำนวนก้าว';$('customPairs').value='5,620\n10,1110\n15,1690\n20,2240\n25,2860\n30,3470\n35,4010\n40,4650\n45,5200\n50,5820';checkCustom()};
+$('checkCustom').onclick=checkCustom;$('useCustom').onclick=useCustom;
+
+/* report */
+function checklistHTML(){
+  const items=[
+    ['Core 5 ขั้น',Boolean(S.testCompleted)],
+    ['Understanding Check',Number.isFinite(S.quiz?.score)],
+    ['Transfer Challenge',Boolean(S.challenge?.completed)],
+    ['Reflection / Application',Boolean($('finding').value.trim())]
+  ];
+  return items.map((x,i)=>`<div class="check ${x[1]?'done':''}"><div class="c">${x[1]?'✓':i+1}</div><div><b>${x[0]}</b><div class="sub">${x[1]?'มีหลักฐานแล้ว':'ยังไม่ครบ'}</div></div></div>`).join('')
+}
+function traceHTML(){return S.history.length?S.history.map((h,i)=>`<div class="traceItem"><b>${i+1}. [${h.phase==='challenge'?'Challenge':'Learn'}] ${h.action}</b><br><span class="sub">${h.detail||''} • ${h.time}</span></div>`).join(''):'<div class="sub">ยังไม่มีร่องรอย</div>'}
+function masteryScore(){let s=0;if(S.cleaned)s++;if(S.split)s++;if(S.model)s++;if(S.reveal)s++;if(S.moreData?.retrained)s++;if(S.challenge.completed)s++;if(S.quiz.score===4)s++;return s}
+function recommendation(){
+  const a=[];
+  const score=masteryV9();
+  if(score<8)a.push('ควรทบทวนหัวข้อที่ตอบผิดใน Understanding Check');
+  if(!S.challenge.completed)a.push('ควรทำ Transfer Challenge ให้ครบ เพื่อยืนยันว่าใช้ความรู้กับ Dataset ใหม่ได้');
+  if(!$('finding').value.trim())a.push('ควรเขียน Reflection ว่า Model ช่วยอะไร และเมื่อไรไม่ควรเชื่อค่าทำนายมากเกินไป');
+  if(S.model&&S.testCompleted&&S.model.testRmse>S.model.trainRmse*1.8)a.push('Test Error สูงกว่า Train มาก — ควรระวังว่า Model อาจยังใช้กับข้อมูลใหม่ได้ไม่ดี');
+  if(!a.length)a.push('หลักฐานรายบุคคลครบ พร้อมส่งครู');
+  return a.join(' • ')
+}
+
+function scoreBreakdownHTML(){
+  const d=S.quiz?.detail||{};
+  const order=['q1','q2','q3','q4','q5'];
+  if(!S.quiz?.score && S.quiz?.score!==0)return'<div class="sub">ยังไม่ได้ทำ Understanding Check</div>';
+  return`<div class="scoreBreak">${order.map(k=>{const x=d[k]||{label:k,score:0};return`<div class="scorePart"><b>${x.score||0}/2</b><span>${x.label||k}</span></div>`}).join('')}</div>`;
+}
+function submissionReady(){
+  return Boolean(S.testCompleted && Number.isFinite(S.quiz?.score) && S.challenge?.completed && $('finding').value.trim());
+}
+
+function reportHTML(){
+  const name=$('studentName').value.trim()||'________________',room=$('studentClass').value.trim()||'________';
+  const ready=submissionReady();
+  const testErr=S.model&&S.testCompleted?S.model.testRmse:null;
+  return`<div class="reportGrid">
+  <div class="reportCard"><h3>Student Learning Summary</h3><b>${name}</b> • ${room}<div class="sub">${S.sc.icon} ${S.sc.name} — ${S.sc.mission}</div>
+    <div class="feedback ${ready?'ok':'warn'}"><b>${ready?'✓ พร้อมส่งครู':'ยังไม่ครบสำหรับส่งครู'}</b><br>
+    Core: ${S.testCompleted?'5/5':'ยังไม่ครบ'} • Understanding: <b>${masteryV9()}/10</b> • Transfer: <b>${S.challenge.completed?'PASS':'ยังไม่ผ่าน'}</b></div>
+  </div>
+  <div class="reportCard"><h3>Evidence Checklist</h3><div class="checklist">${checklistHTML()}</div></div>
+
+  <div class="reportCard" style="grid-column:1/-1"><h3>Understanding Score /10</h3>${scoreBreakdownHTML()}<div class="sub" style="margin-top:5px">Progress ไม่คิดเป็นคะแนน — คะแนนมาจากคำตอบที่สะท้อนความเข้าใจ 5 ด้าน</div></div>
+
+  <div class="reportCard"><h3>Model & Test Evidence</h3>
+    Dataset <b>${S.raw.filter(r=>!r.deleted).length}</b> • ใช้จริง <b>${valid().length}</b><br>
+    Training/Test ถูกแบ่งอัตโนมัติ <b>${S.splitPct||80}/${100-(S.splitPct||80)}</b>
+    <div class="formula" style="font-size:16px">${formula()}</div>
+    <div class="sub">${meaning()}</div>
+    Train Error <b>${S.model?S.model.trainRmse.toFixed(2):'–'}</b> • Test Error <b>${testErr!==null?testErr.toFixed(2):'–'}</b>
+  </div>
+
+  <div class="reportCard"><h3>Transfer & Application</h3>
+    Transfer Challenge: <b>${S.challenge.completed?'PASS':'ยังไม่ผ่าน'}</b><br>
+    Experiment +5 Data: <b>${S.moreData?.retrained?'ทดลองแล้ว':'Optional / ยังไม่ได้ทดลอง'}</b>
+    <h3 style="margin-top:7px">Reflection</h3>
+    <div>${$('finding').value.trim()||'ยังไม่ได้เขียน'}</div>
+  </div>
+
+  <div class="reportCard" style="grid-column:1/-1"><h3>Teacher Note / Recommendation</h3><div class="sub">${recommendation()}</div></div>
+  <div class="reportCard" style="grid-column:1/-1"><h3>Learning Trace</h3><div class="trace">${traceHTML()}</div></div>
+  </div>`
+}
+function updateReport(){$('reportBody').innerHTML=reportHTML()}
+function saveState(){
+  S.finding=$('finding').value;
+  S.profile={name:$('studentName').value||S.profile.name||'',classroom:$('studentClass').value||S.profile.classroom||''};
+  const teacherSummary={
+    student:S.profile,
+    coreCompleted:Boolean(S.testCompleted),
+    coreProgress:coreProgressV9(),
+    understandingScore:masteryV9(),
+    scoreDetail:S.quiz?.detail||null,
+    transferChallenge:S.challenge?.completed?'PASS':'NOT_YET',
+    reflection:S.finding||'',
+    scenario:S.sc?.name||'',
+    model:formula(),
+    trainError:S.model?.trainRmse??null,
+    testError:S.model&&S.testCompleted?S.model.testRmse:null,
+    optionalMoreData:Boolean(S.moreData?.retrained),
+    readyToSubmit:submissionReady(),
+    recommendation:recommendation()
+  };
+  log('Save JSON','บันทึกหลักฐานส่งครู');
+  const blob=new Blob([JSON.stringify({version:11,savedAt:new Date().toISOString(),teacherSummary,state:S},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ML_Journey_Student_Evidence_v11.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),800);
+  toast(teacherSummary.readyToSubmit?'บันทึก JSON พร้อมส่งครูแล้ว':'บันทึก JSON แล้ว — Report จะแจ้งสิ่งที่ยังขาด')
+}
+function loadState(file){const fr=new FileReader();fr.onload=()=>{try{const o=JSON.parse(fr.result);S=o.state||o;S.splitPct=S.splitPct||80;S.moreData=S.moreData||{guess:null,collected:false,retrained:false,before:null,after:null,newCount:0};S.testCompleted=Boolean(S.testCompleted||S.reveal);S.raw=(S.raw||[]).map(r=>{if(r.deleted&&['missing','duplicate'].includes(r.issue))return{...r,deleted:false,excluded:true};return{excluded:false,...r}});$('finding').value=S.finding||'';$('studentName').value=S.profile?.name||'';$('studentClass').value=S.profile?.classroom||'';renderAll();toast('โหลดแล้ว — ดู NEXT STEP')}catch(e){toast('JSON ไม่ถูกต้อง')}};fr.readAsText(file)}
+function printReport(){const w=window.open('','_blank');w.document.write(`<html><head><meta charset="utf-8"><title>Learning Report</title><style>body{font-family:Tahoma;padding:28px;color:#172033}.reportGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.reportCard{border:1px solid #ddd;border-radius:12px;padding:12px}.sub{color:#667085;font-size:13px}.formula{font-family:"Times New Roman";font-size:23px;color:#2f4778}.traceItem{margin:5px 0}</style></head><body><h1>Learning Evidence Report</h1>${reportHTML()}</body></html>`);w.document.close();setTimeout(()=>w.print(),300)}
+function reportPng(){
+  const c=document.createElement('canvas'),W=1200,H=1550;c.width=W;c.height=H;const g=c.getContext('2d');
+  g.fillStyle='#f6f8fc';g.fillRect(0,0,W,H);g.fillStyle='#20365e';g.fillRect(0,0,W,140);g.fillStyle='#fff';g.font='bold 40px Tahoma';g.fillText('LEARNING EVIDENCE REPORT',50,62);g.font='20px Tahoma';g.fillText(($('studentName').value||'ไม่ระบุชื่อ')+' • '+($('studentClass').value||'-'),50,103);
+  g.fillStyle='#172033';g.font='bold 23px Tahoma';g.fillText(`${S.sc.icon} ${S.sc.name}`,50,190);g.font='18px Tahoma';g.fillText(S.sc.mission,50,225);g.font='bold 21px Tahoma';g.fillText(`Understanding ${masteryV9()}/10 • Transfer ${S.challenge.completed?'PASS':'NOT YET'} • Core ${S.testCompleted?'5/5':'Incomplete'}`,50,280);
+  g.font='bold 21px Tahoma';g.fillText('Model',50,345);g.font='bold 30px Times New Roman';g.fillStyle='#2f4778';g.fillText(formula(),50,390);g.font='17px Tahoma';g.fillStyle='#344054';g.fillText(`Train RMSE ${S.model?S.model.trainRmse.toFixed(2):'–'} • Test RMSE ${S.model&&S.reveal?S.model.testRmse.toFixed(2):'–'}`,50,435);
+  g.font='bold 21px Tahoma';g.fillText('สิ่งที่ค้นพบ',50,505);g.font='17px Tahoma';g.fillText(($('finding').value||'ยังไม่ได้เขียน').slice(0,100),50,545);
+  g.font='bold 21px Tahoma';g.fillText('Learning Trace',50,615);g.font='15px Tahoma';let y=650;S.history.slice(-15).forEach((h,i)=>{g.fillText(`${i+1}. [${h.phase}] ${h.action} — ${h.detail||''}`.slice(0,112),60,y);y+=29});
+  g.fillStyle='#fff5e8';g.fillRect(50,1260,1100,130);g.fillStyle='#7a552a';g.font='bold 17px Tahoma';g.fillText('คำแนะนำ: '+recommendation().slice(0,105),70,1310);
+  c.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='learning_report_v11.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),800)},'image/png')
+}
+
+/* events */
+$('cleanBtn').onclick=cleanData;if($('splitBtn'))$('splitBtn').onclick=splitData;$('trainBtn').onclick=trainModel;$('testBtn').onclick=playTestAnimation;
+$('predictX').oninput=()=>{renderPrediction();draw()};$('predictX').onchange=()=>{chime(710,.05);speak($('predictSentence').textContent)};
+$('finding').oninput=()=>{S.finding=$('finding').value;status();updateScoresV9();renderTeacherReady()};
+$('speakBtn').onclick=()=>speak(`${S.sc.name}. ${meaning()}. ${nextState().task}`);
+$('newChallenge').onclick=startGeneratedChallenge;
+$('ownChallenge').onclick=()=>{if(!S.testCompleted){toast('ทำ Core 5 ขั้นให้ครบก่อน');return}customMode='challenge';$('customModalTitle').textContent='New Data Challenge — เก็บ/ใส่ Dataset เอง';$('customFeedback').className='feedback warn';$('customFeedback').textContent='กรอกข้อมูลที่เก็บมา แล้วกด ตรวจ Dataset ก่อนใช้';$('customModal').classList.add('show')};
+$('reportBtn').onclick=()=>{updateReport();$('studentName').value=S.profile?.name||'';$('studentClass').value=S.profile?.classroom||'';$('reportModal').classList.add('show')};
+$('studentName').oninput=()=>{S.profile.name=$('studentName').value;updateReport()};$('studentClass').oninput=()=>{S.profile.classroom=$('studentClass').value;updateReport()};
+$('saveJson').onclick=saveState;$('saveJson2').onclick=saveState;$('loadJson').onclick=()=>$('jsonFile').click();$('jsonFile').onchange=e=>{if(e.target.files[0])loadState(e.target.files[0])};
+$('printReport').onclick=printReport;$('reportPng').onclick=reportPng;
+
+
+document.querySelectorAll('[data-focus]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-focus]').forEach(x=>x.classList.remove('active'));b.classList.add('active');S.focus=b.dataset.focus;draw()});
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$((b.dataset.close)).classList.remove('show'));
+
+document.querySelectorAll('[data-moreguess]').forEach(b=>b.onclick=()=>setMoreGuess(b.dataset.moreguess));
+$('collect5Btn').onclick=collectMoreFive;
+$('retrainBtn').onclick=retrainWithMore;
+
+$('genScenario').onchange=syncGenerateRange;
+$('previewGenerate').onclick=previewGeneratedChallenge;
+$('useGenerated').onclick=useGeneratedChallenge;
+$('splitRatio').onchange=()=>{const p=Number($('splitRatio').value);S.splitPct=p;$('splitHint').textContent=p===80?'80/20 เหมาะเป็นค่าเริ่มต้นเมื่อมีข้อมูลประมาณ 10 จุดขึ้นไป':'70/30 ช่วยให้มี Test Data มากขึ้นเมื่อ Dataset มีเพียง 8–10 จุด';};
+
+window.addEventListener('resize',resize);
+
+setPreset(0);resize();
+</script>
+</body>
+</html>
